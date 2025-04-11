@@ -19,7 +19,7 @@
     'use strict';
     console.log("SpicyChat Logic Core: Скрипт запущен.");
 
-    const SCRIPT_UPDATE_URL = 'https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/Logic_Core/SpicyChat_Logic_Core.user.js'; // URL CORE
+    const SCRIPT_UPDATE_URL = 'https://github.com/RomanovaSpicy/Spicy_CustomUI/raw/refs/heads/main/Logic_Core/SpicyChat_Logic_Core.user.js'; // URL CORE
     const CHECK_INTERVAL_HOURS = 1;
     const LAST_CHECK_TIMESTAMP_KEY = "scLogicCore_lastUpdateCheck";
 
