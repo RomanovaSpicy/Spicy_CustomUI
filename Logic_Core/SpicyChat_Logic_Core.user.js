@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SpicyChat Logic Core
 // @namespace    http://tampermonkey.net/
-// @version      1.8.13
+// @version      1.8.14
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa
 // @description  Adds component labels to SpicyChat UI elements.
 // @match        https://spicychat.ai/chat/*
