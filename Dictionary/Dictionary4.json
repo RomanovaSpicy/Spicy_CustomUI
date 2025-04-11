@@ -1,0 +1,309 @@
+{
+  "components": {
+    "//": {
+      "//": "--- ОБЩИЕ КОНТЕЙНЕРЫ ---"
+    },
+    "div#root": {
+      "label": "AppRoot"
+    },
+    "div#root > div > span > span > span > div.grid": {
+      "label": "MainLayoutGrid"
+    },
+    "div.grid > div:nth-child(1)": {
+      "label": "SideNavContainer"
+    },
+    "div.grid > div:nth-child(2)": {
+      "label": "ChatAreaContainer"
+    },
+
+    "//": {
+      "//": "--- ЛЕВЫЙ САЙДБАР (Зеленая область - часть 1) ---"
+    },
+    "nav[style*='width:54px']": {
+      "label": "SideNavBar"
+    },
+    "nav > div.h-\\[56px\\]": {
+      "label": "SideNavHeader"
+    },
+    "button#navigation-button-menu-toggle-desktop": {
+      "label": "SideNavMenuToggleButton"
+    },
+    "nav > div.flex-1 > div:nth-of-type(1)": {
+      "label": "SideNavTopSection"
+    },
+    "nav > div.flex-1 > div:nth-of-type(1) button:has(svg.lucide-house)": {
+      "label": "SideNavHomeButton"
+    },
+    "nav > div.flex-1 > div:nth-of-type(1) button:has(svg.lucide-message-square-text)": {
+      "label": "SideNavChatsButton"
+    },
+    "nav > div.flex-1 > div:nth-of-type(1) button:has(svg.lucide-venetian-mask)": {
+      "label": "SideNavBrowseButton"
+    },
+     "nav > div.flex-1 > div:nth-of-type(2)": {
+      "label": "SideNavMiddleSection"
+    },
+     "nav button[title='Chatbots']:has(svg.lucide-square-plus)": {
+      "label": "SideNavCreateChatbotButton"
+    },
+    "nav > div.flex-1 > div:nth-of-type(2) button:has(svg.lucide-bot)": {
+      "label": "SideNavMyChatbotsButton"
+    },
+    "nav > div.flex-1 > div:nth-of-type(2) button:has(svg.lucide-heart)": {
+      "label": "SideNavFavoritesButton"
+    },
+     "nav > div.flex-1 > div:nth-of-type(2) button:has(svg.lucide-badge-check)": {
+      "label": "SideNavVerifiedButton"
+    },
+     "nav > div.flex-1 > div:nth-of-type(2) button:has(svg.lucide-trophy)": {
+      "label": "SideNavLeaderboardButton"
+    },
+     "nav > div.flex-1 > div:nth-of-type(2) button:has(svg.lucide-user-x)": {
+      "label": "SideNavBlockedUsersButton"
+    },
+    "nav > div.flex-1 > div:nth-of-type(3)": {
+      "label": "SideNavBottomSection"
+    },
+     "nav > div.flex-1 > div:nth-of-type(3) button:has(svg.lucide-crown)": {
+      "label": "SideNavPremiumButton"
+    },
+     "nav > div.flex-1 > div:nth-of-type(3) button:has(svg.lucide-info)": {
+      "label": "SideNavInfoButton"
+    },
+    "nav > footer": {
+      "label": "SideNavFooter"
+    },
+    "nav footer button[aria-label='Sign Out']": {
+      "label": "SideNavSignOutButton"
+    },
+    "nav footer a[href*='discord.gg']": {
+      "label": "SideNavDiscordLink"
+    },
+     "nav footer a[href*='twitter.com']": {
+      "label": "SideNavTwitterLink"
+    },
+     "nav footer a[href*='reddit.com']": {
+      "label": "SideNavRedditLink"
+    },
+
+    "//": {
+      "//": "--- ШАПКА ЧАТА (Розовая область) ---"
+    },
+     "div.sticky[style*='height:56px']": {
+      "label": "ChatHeaderBar"
+    },
+    "div.sticky button > div > img.object-cover": {
+       "//": "Аватар персонажа в шапке",
+      "label": "ChatHeaderAvatarImage"
+    },
+     "div.sticky a[href*='/chatbot/'] > p": {
+       "//": "Имя персонажа в шапке (текст внутри ссылки)",
+      "label": "ChatHeaderCharacterName"
+    },
+     "div.sticky a[href*='/creator/'] > p": {
+       "//": "Имя создателя в шапке (текст внутри ссылки)",
+      "label": "ChatHeaderCreatorName"
+    },
+     "div.sticky button[data-slot='trigger']:has(svg.lucide-thumbs-up)": {
+      "label": "ChatHeaderLikeButton"
+    },
+     "div.sticky button[aria-label='Share2-button']": {
+      "label": "ChatHeaderShareButton"
+    },
+     "div.sticky div.relative button[aria-label='MoreHorizontal-button']": {
+        "//": "Кнопка 'три точки' (доп. опции) в шапке",
+      "label": "ChatHeaderMoreOptionsButton"
+    },
+
+    "//": {
+        "//": "--- ОБЛАСТЬ СООБЩЕНИЙ (Зеленая область - часть 2) ---"
+    },
+    "div.grow.flex.flex-col.w-full.left-0.items-center.absolute.h-full.overflow-auto": {
+        "label": "ChatMessageScrollContainer",
+        "//": "Основной фон чата. Может потребовать переноса в body для полного перекрытия.",
+        "background": true
+    },
+    "div.max-w-\\[620px\\]": {
+        "label": "ChatMessagesMaxWidthContainer"
+    },
+    "//": {
+        "//": "--- Блок 'Hero' (Начальное сообщение/описание персонажа) ---"
+    },
+    "div.max-w-\\[620px\\] > span.t_ChatHeroContainer": {
+        "label": "ChatHeroBlock"
+    },
+    "div.is_ChatHeroContainer": {
+        "label": "ChatHeroInnerContainer"
+    },
+    "div.is_ChatHero div[style*='height:80px']": {
+        "label": "ChatHeroAvatarContainer"
+    },
+    "div.is_ChatHero div[style*='height:80px'] img": {
+        "label": "ChatHeroAvatarImage"
+    },
+     "p.is_ChatHero[style*='font-size:16px']": {
+         "//": "Имя персонажа в блоке Hero",
+        "label": "ChatHeroCharacterName"
+    },
+    "div.is_ChatHero > div._dsp-flex._fw-wrap": {
+        "label": "ChatHeroTagsContainer"
+    },
+    "span.t_Chip > div.is_Chip": {
+         "//": "Индивидуальный тег в блоке Hero",
+        "label": "ChatHeroTag"
+    },
+     "p.is_ChatHero[style*='font-size:14px']": {
+         "//": "Описание персонажа в блоке Hero",
+        "label": "ChatHeroDescription"
+    },
+    "p.is_ChatHeroContainer[style*='font-size:12px']": {
+        "//": "Дисклеймер под блоком Hero",
+        "label": "ChatHeroDisclaimer"
+    },
+    "//": {
+      "//": "--- Блоки сообщений (Общие селекторы) ---"
+    },
+    "div.py-lg": {
+        "label": "ChatMessageWrapper"
+    },
+    ".py-lg > .gap-md[style*='max-width:736px']": {
+      "label": "ChatMessageInnerContainer"
+    },
+    ".gap-md button > div > img.object-cover": {
+      "label": "MessageAvatarImage"
+    },
+     ".gap-md > p.font-medium": {
+      "label": "MessageSenderName"
+    },
+    ".gap-md > .flex.flex-col.gap-md > .break-words": {
+      "label": "MessageContentContainer"
+    },
+    ".break-words span.leading-6": {
+      "label": "MessageTextSpan"
+    },
+    "span.leading-6 > em.italic": {
+      "label": "MessageItalicText"
+    },
+     "span.leading-6 > q.text-colorQuote": {
+      "label": "MessageQuotedText"
+    },
+    ".gap-md > .flex.flex-col.gap-md > .gap-md": {
+        "//": "Контейнер кнопок под сообщением (реген, рейтинг и т.д.)",
+      "label": "MessageActionsContainer"
+    },
+    ".gap-md .relative button[aria-label='MoreVertical-button']": {
+        "//": "Кнопка 'три точки' (доп. опции) под сообщением",
+        "label": "MessageMoreOptionsButton"
+    },
+
+    "//": {
+      "//": "--- Сообщение Бота (Специфичные селекторы) ---"
+    },
+    ".py-lg > .gap-md:not(.bg-gray-4)": {
+      "label": "BotMessageContainer"
+    },
+    ".py-lg > .gap-md:not(.bg-gray-4) button:has(img)": {
+      "label": "BotMessageAvatarButton"
+    },
+    ".py-lg > .gap-md:not(.bg-gray-4) p.font-medium": {
+      "label": "BotMessageName"
+    },
+    ".py-lg > .gap-md:not(.bg-gray-4) .break-words": {
+      "label": "BotMessageContentContainer"
+    },
+    ".py-lg > .gap-md:not(.bg-gray-4) .break-words span": {
+       "//": "Может быть слишком общим, но ловит основной текст",
+      "label": "BotMessageTextSpan"
+    },
+     ".py-lg > .gap-md:not(.bg-gray-4) em.italic": {
+      "label": "BotMessageItalicText"
+    },
+     ".py-lg > .gap-md:not(.bg-gray-4) q.text-colorQuote": {
+      "label": "BotMessageQuotedText"
+    },
+    ".py-lg > .gap-md:not(.bg-gray-4) > .gap-md": {
+      "label": "BotMessageActionsContainer"
+    },
+    "button[aria-label='RefreshCcw-button']": {
+      "label": "BotMessageRegenerateButton"
+    },
+    "button[aria-label='MessageSquarePlus-button']": {
+      "label": "BotMessageAddVariantButton"
+    },
+    "button[aria-label='ImagePlus-button']": {
+      "label": "BotMessageAddImageButton"
+    },
+    "button[aria-label='Star-button']": {
+      "label": "BotMessageRateButton"
+    },
+    "button[aria-label='Volume2-button']": {
+      "label": "BotMessageReadAloudButton"
+    },
+     ".py-lg > .gap-md:not(.bg-gray-4) .relative button[aria-label='MoreVertical-button']": {
+        "label": "BotMessageMoreOptionsButton"
+    },
+    "//": {
+      "//": "--- Сообщение Пользователя (Специфичные селекторы) ---"
+    },
+    "div.py-lg > div.bg-gray-4": {
+      "label": "UserMessageBackgroundContainer",
+      "//": "Фон сообщения пользователя",
+      "background": true
+    },
+     "div.bg-gray-4 > .gap-md[style*='max-width:736px']": {
+      "label": "UserMessageInnerContainer"
+    },
+    "div.bg-gray-4 button:has(img)": {
+      "label": "UserMessageAvatarButton"
+    },
+     "div.bg-gray-4 p.font-medium": {
+      "label": "UserMessageName"
+    },
+     "div.bg-gray-4 .break-words": {
+      "label": "UserMessageContentContainer"
+    },
+     "div.bg-gray-4 .break-words span": {
+      "label": "UserMessageTextSpan"
+    },
+     "div.bg-gray-4 em.italic": {
+      "label": "UserMessageItalicText"
+    },
+     "div.bg-gray-4 q.text-colorQuote": {
+      "label": "UserMessageQuotedText"
+    },
+    "div.bg-gray-4 .relative button[aria-label='MoreVertical-button']": {
+      "label": "UserMessageMoreOptionsButton"
+    },
+
+    "//": {
+      "//": "--- ПАНЕЛЬ ВВОДА (Красная область) ---"
+    },
+    "div.bg-transparent.pb-\\[10px\\]": {
+      "label": "ChatInputBarContainer"
+    },
+    "div.bg-transparent.pb-\\[10px\\] > div.gap-\\[2px\\]": {
+      "label": "ChatInputBarInnerContainer"
+    },
+     "div.is_ChatInput[style*='max-width:736px'] > span > div.is_ChatInput[style*='border-radius:12px']": {
+      "label": "TextInputAreaWrapper"
+    },
+    "div.is_ChatInput > div:has(svg.lucide-mic)": {
+       "//": "Контейнер кнопки микрофона",
+      "label": "ChatInputMicButtonContainer"
+    },
+     "svg.lucide-mic": {
+      "label": "ChatInputMicIcon"
+    },
+    "textarea[placeholder^='Message ']": {
+      "label": "MessageInputTextarea"
+    },
+     "span.t_ButtonIcon > div.is_ButtonIcon": {
+        "//": "Контейнер кнопки отправки",
+      "label": "SendButtonContainer"
+    },
+     "div.is_ButtonIcon > svg": {
+        "//": "Иконка отправки (лампочка/самолетик)",
+      "label": "SendButtonIcon"
+    }
+  }
+}
