@@ -19,7 +19,7 @@
     'use strict';
     console.log("SpicyChat Logic Core: Скрипт запущен.");
 
-    const SCRIPT_UPDATE_URL = ''; // URL CORE
+    const SCRIPT_UPDATE_URL = 'https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/Logic_Core/SpicyChat_Logic_Core.user.js'; // URL CORE
     const CHECK_INTERVAL_HOURS = 1;
     const LAST_CHECK_TIMESTAMP_KEY = "scLogicCore_lastUpdateCheck";
 
@@ -220,7 +220,7 @@
     }
 
     let componentDictionary = {};
-    const dictionaryUrl = ''; // URL СЛОВАРЯ
+    const dictionaryUrl = 'https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/refs/heads/main/Dictionary/Dictionary4.json'; // URL СЛОВАРЯ
 
     async function loadDictionary(callback) {
         console.log("SpicyChat Logic Core: Загрузка словаря...");
