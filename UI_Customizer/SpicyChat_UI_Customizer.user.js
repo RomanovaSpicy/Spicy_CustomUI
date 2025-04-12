@@ -9,7 +9,7 @@
 // @grant        GM_getValue
 // @grant        GM_addStyle
 // @grant        GM_info
-// @updateURL    
+// @updateURL    https://github.com/RomanovaSpicy/Spicy_CustomUI/raw/refs/heads/main/UI_Customizer/SpicyChat_UI_Customizer.user.js
 // @run-at       document-idle
 // ==/UserScript==
 
