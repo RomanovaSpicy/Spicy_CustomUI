@@ -8,26 +8,38 @@ A set of user scripts designed to enhance and customize the chat interface on [S
 
 ## 📜 Brief Description & Features
 
-This project consists of two scripts:
+This project consists of **three** scripts:
 
-1.  **SpicyChat Logic Core:**
+1.  **`SpicyChat Logic Core`** (`Logic_Core/SpicyChat_Logic_Core.user.js`)
     *   **Foundation:** Adds necessary technical labels (data-attributes) to elements on the SpicyChat website.
     *   **Indicator:** Displays a logo in the corner of the screen, showing that the core is active.
     *   **Update Check:** Notifies the user about new versions of the Logic Core itself.
-    *   **Required** for the UI Customizer to function.
+    *   **Required** for the `UI Customizer` and `Accessibility Enhancer` to function.
 
-2.  **SpicyChat UI Customizer:**
-    *   **Customization:** Allows users to change the font size of messages.
-    *   **Themes:** Provides a collection of pre-made visual themes for the chat interface.
+2.  **`SpicyChat UI Customizer`** (`UI_Customizer/SpicyChat_UI_Customizer.user.js`)
+    *   **Customization:** Allows users to change the font size of messages and apply various **visual themes** (not specifically designed for accessibility).
     *   **Persistence:** Remembers the selected font size and theme across sessions.
     *   **Control:** Settings are accessible via the clickable Logic Core logo.
+    *   **Requires `SpicyChat Logic Core`.**
+    *   **Conflicts with `Accessibility Enhancer`. Choose only one.**
 
-**Main Features:**
+3.  **`SpicyChat Accessibility Enhancer` [Beta]** (`Accessibility_Enhancer[Beta]/SpicyChat_Accessibility_Enhancer.js`)
+    *   **Accessibility:** Improves the interface for users with visual impairments.
+    *   **Themes:** Provides a collection of **specialized themes** designed for color blindness (Deuteranopia, Protanopia, Tritanopia), photosensitivity, and low vision (high contrast).
+    *   **Customization:** Allows users to change the font size of messages.
+    *   **Persistence:** Remembers the selected font size and theme across sessions (uses the same storage as UI Customizer).
+    *   **Control:** Settings are accessible via the clickable Logic Core logo.
+    *   **Requires `SpicyChat Logic Core`.**
+    *   **Conflicts with `UI Customizer`. Choose only one.**
+    *   **Status:** Beta.
 
-*   ✅ Adjust message font size (8px - 32px).
-*   🎨 Apply various interface themes (including dark versions of popular styles).
+**Main Features (depending on script chosen):**
+
+*   ✅ Adjust message font size (10px - 36px).
+*   🎨 Apply various interface themes (Visual themes in *UI Customizer*, Accessibility themes in *Accessibility Enhancer*).
 *   💾 Automatically saves your preferences.
 *   🖱️ Convenient access to settings via the indicator logo.
+*   ♿ Specialized themes for visual accessibility needs in the *Accessibility Enhancer*.
 
 ---
 
@@ -44,42 +56,55 @@ Install the extension for your browser if you don't have one already.
 
 **Step 2: Install SpicyChat Logic Core (REQUIRED)**
 
-*   **Click the link:** [`SpicyChat_Logic_Core.user.js`](https://github.com/RomanovaSpicy/Spicy_CustomUI/raw/refs/heads/main/Core/SpicyChat_Logic_Core.user.js)
+*   **Click the link:** [`SpicyChat_Logic_Core.user.js` (Raw Install Link)](https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/main/Logic_Core/SpicyChat_Logic_Core.user.js)
 *   Your userscript manager (Tampermonkey/Violentmonkey) should automatically open the installation page.
 *   Click the **"Install"** button.
 
-**Step 3: Install SpicyChat UI Customizer**
+**Step 3: Install *ONE* Interface Script (UI Customizer *OR* Accessibility Enhancer)**
 
-*   **Click the link:** [`SpicyChat_UI_Customizer.user.js`](https://github.com/RomanovaSpicy/Spicy_CustomUI/raw/refs/heads/main/UI_Customizer/SpicyChat_UI_Customizer.user.js)
-*   The userscript manager will again open the installation page.
-*   Click the **"Install"** button.
+**IMPORTANT:** Do **NOT** install both `SpicyChat UI Customizer` and `SpicyChat Accessibility Enhancer` simultaneously. They control the same settings and will conflict. Choose **ONE** based on your needs.
+
+*   **Option A: For General Visual Themes**
+    *   **Click:** [`SpicyChat_UI_Customizer.user.js` (Raw Install Link)](https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/main/UI_Customizer/SpicyChat_UI_Customizer.user.js)
+    *   Click **"Install"** in the userscript manager.
+
+*   **Option B: For Accessibility Themes [Beta]**
+    *   **Click:** [`SpicyChat_Accessibility_Enhancer.js` (Raw Install Link)](https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/main/Accessibility_Enhancer%5BBeta%5D/SpicyChat_Accessibility_Enhancer.js)
+    *   Click **"Install"** in the userscript manager.
 
 **Step 4: Done!**
 
 *   **Refresh** the SpicyChat chat page (F5 or Ctrl+R).
-*   A logo should appear in the bottom-right corner. Click it to access the Customizer settings.
+*   A logo should appear in the bottom-right corner. Click it to access the settings panel for the script you installed in Step 3.
 
 ---
 
 ## ❓ FAQ (Frequently Asked Questions)
 
-*   **Q: Why are there two separate scripts? Can't they be combined?**
-    *   **A:** The `Logic Core` handles the basic element tagging, which could potentially be useful for other scripts too. The `UI Customizer` uses these tags to apply styles. This separation simplifies maintenance and potential future extensions. The `Logic Core` is updated less frequently but serves as the foundation.
+*   **Q: Why are there separate scripts (`Logic Core`, `UI Customizer`, `Accessibility Enhancer`)?**
+    *   **A:** The `Logic Core` provides the essential foundation (element tagging) used by both interface scripts. Separating the `UI Customizer` (visual themes) and `Accessibility Enhancer` (accessibility themes) allows users to choose the specific functionality they need without loading unnecessary code. It also simplifies maintenance.
 
-*   **Q: The logo in the corner isn't showing up. / The script isn't working.**
-    *   **A:** Ensure both scripts (`Logic Core` and `UI Customizer`) are installed and **enabled** in your userscript manager (Tampermonkey/Violentmonkey). Refresh the SpicyChat page (F5). Sometimes the site needs a moment to fully load; wait a few seconds. Check the browser console (F12 -> Console) for any errors.
+*   **Q: Can I use both the `UI Customizer` and the `Accessibility Enhancer` at the same time?**
+    *   **A: No.** They modify the same parts of the interface and use the same settings storage keys (`scUICustomizer_Theme_v1`, `scUICustomizer_FontSize_v1`). Installing both will cause conflicts and unpredictable results. Please choose **one** based on your needs and ensure the other is disabled or uninstalled in your userscript manager.
+
+*   **Q: The logo in the corner isn't showing up / The script isn't working.**
+    *   **A:**
+        1.  Ensure `Logic Core` is installed and enabled.
+        2.  Ensure EITHER `UI Customizer` OR `Accessibility Enhancer` (not both!) is installed and enabled.
+        3.  Refresh the SpicyChat page (F5 or Ctrl+R). Allow a few seconds for the page and scripts to load.
+        4.  Check the browser console (F12 -> Console) for any errors related to the scripts.
 
 *   **Q: My settings (font/theme) aren't being saved.**
-    *   **A:** Make sure your userscript manager has permission to store data (`GM_setValue`, `GM_getValue`). This permission is usually requested during script installation. Check the extension's settings.
+    *   **A:** Make sure your userscript manager has permission to store data (`GM_setValue`, `GM_getValue`). This is usually requested during script installation. Check the extension's settings.
 
 *   **Q: How do I update the scripts?**
-    *   **A:** The `Logic Core` has a built-in update check and will show a notification if a new version is available (with a link to GitHub). The `UI Customizer` can be updated manually through your userscript manager's dashboard (there's usually a "Check for userscript updates" button) or by reinstalling it using the link from Step 3.
+    *   **A:** The `Logic Core` has a built-in update check and will notify you. The `UI Customizer` and `Accessibility Enhancer` can be updated via your userscript manager's dashboard (look for a "Check for userscript updates" button) or by reinstalling using the links in Step 3.
 
 *   **Q: SpicyChat updated their website, and the script stopped working correctly.**
-    *   **A:** This can happen. The scripts depend on the website's current structure. If significant changes occur, the scripts might need adaptation. Look for updates in this repository or contact the author.
+    *   **A:** This can happen. The scripts depend on the website's structure. If significant changes occur, the scripts (especially `Logic Core` and the `Dictionary`) might need updates. Check this repository for newer versions or contact the author.
 
 *   **Q: Can I suggest a theme or an idea?**
-    *   **A:** Yes, please contact the author via Discord (see below).
+    *   **A:** Yes, please contact the author via Discord (see below). Feedback, especially on the Accessibility Enhancer [Beta], is welcome.
 
 ---
 
