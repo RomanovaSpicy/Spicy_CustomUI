@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         SpicyChat Logic Core
 // @namespace    http://tampermonkey.net/
-// @version      1.8.15
+// @version      1.9
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa
 // @description  Adds component labels to SpicyChat UI elements.
 // @match        https://spicychat.ai/chat/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=spicychat.ai
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_addStyle
