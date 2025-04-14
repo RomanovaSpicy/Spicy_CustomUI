@@ -9,8 +9,8 @@
 // @grant        GM_getValue
 // @grant        GM_addStyle
 // @grant        GM_info
-// @updateURL    
-// @downloadURL  
+// @updateURL    https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/refs/heads/main/Accessibility_Enhancer%5BBeta%5D/SpicyChat_Accessibility_Enhancer.js
+// @downloadURL  https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/refs/heads/main/Accessibility_Enhancer%5BBeta%5D/SpicyChat_Accessibility_Enhancer.js
 // @run-at       document-idle
 // ==/UserScript==
 
