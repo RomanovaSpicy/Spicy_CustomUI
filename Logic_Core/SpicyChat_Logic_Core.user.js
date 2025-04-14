@@ -13,6 +13,8 @@
 // @grant        GM_info
 // @grant        GM_notification
 // @connect      raw.githubusercontent.com
+// @updateURL    https://github.com/RomanovaSpicy/Spicy_CustomUI/raw/refs/heads/main/Logic_Core/SpicyChat_Logic_Core.user.js
+// @downloadURL  https://github.com/RomanovaSpicy/Spicy_CustomUI/raw/refs/heads/main/Logic_Core/SpicyChat_Logic_Core.user.js
 // @run-at       document-end
 // ==/UserScript==
 
