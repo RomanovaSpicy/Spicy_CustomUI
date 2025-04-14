@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SpicyChat Logic Core
 // @namespace    http://tampermonkey.net/
-// @version      1.8.14
+// @version      1.8.15
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa
 // @description  Adds component labels to SpicyChat UI elements.
 // @match        https://spicychat.ai/chat/*
@@ -19,7 +19,7 @@
     'use strict';
     console.log("SpicyChat Logic Core: Скрипт запущен.");
 
-    const SCRIPT_UPDATE_URL = 'https://github.com/RomanovaSpicy/Spicy_CustomUI/raw/refs/heads/main/Logic_Core/SpicyChat_Logic_Core.user.js'; // URL CORE
+    const SCRIPT_UPDATE_URL = 'https://github.com/RomanovaSpicy/Spicy_CustomUI/raw/refs/heads/main/Logic_Core/SpicyChat_Logic_Core.user.js';
     const CHECK_INTERVAL_HOURS = 1;
     const LAST_CHECK_TIMESTAMP_KEY = "scLogicCore_lastUpdateCheck";
 
