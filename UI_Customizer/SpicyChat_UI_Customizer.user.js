@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SpicyChat UI Customizer
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.1.3
 // @description  Customize SpicyChat font size, themes, and background. Requires 'SpicyChat Logic Core'.
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa
 // @match        https://spicychat.ai/chat/*
@@ -139,6 +139,25 @@
         #${POPUP_ID} .customizer-button.apply-bg:hover { background-color: #98C9C8; }
         #${LOGO_ID} { cursor: pointer !important; pointer-events: auto !important; transition: transform 0.2s ease, opacity 0.2s ease !important; opacity: 0.7 !important; }
         #${LOGO_ID}:hover { transform: scale(1.1) !important; opacity: 1 !important; }
+}
+
+       [data-ui-component="ChatInputBarContainer"] {
+       padding-top: 3px !important;
+       padding-bottom: 5px !important;
+
+}
+       [data-ui-component="ChatInputBarContainer"] {
+       position: absolute !important;
+       bottom: 5px !important;
+       left: 0 !important;
+       right: 0 !important;
+       max-width: 70% !important;
+       margin-top: 0 !important;
+
+}
+       [data-ui-component="ChatMessageScrollContainer"] {
+       padding-bottom: 60px !important;
+}
     `;
 
     function applyDynamicStyles() {
