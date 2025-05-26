@@ -304,6 +304,12 @@
      "div.is_ButtonIcon > svg": {
         "//": "Иконка отправки (лампочка/самолетик)",
       "label": "SendButtonIcon"
-    }
+    },
+    "div.py-lg > div.gap-md:not(.bg-gray-4) button:has(img.object-cover)"
+      "label": "BotAvatar"
+    },
+    "div.py-lg > div.bg-gray-4 button:has(img.object-cover)"
+       "label": "UserAvatar"
+   }
   }
 }
