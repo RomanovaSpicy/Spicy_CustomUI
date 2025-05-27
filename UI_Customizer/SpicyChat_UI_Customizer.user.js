@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SpicyChat UI Customizer
 // @namespace    http://tampermonkey.net/
-// @version      1.4.8
+// @version      1.5.1
 // @description  Customize SpicyChat UI. Requires 'SpicyChat Logic Core'.
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa
 // @match        https://spicychat.ai/chat/*
@@ -141,8 +141,8 @@
                 <label for="${BUTTON_ORDER_SELECT_ID}">Message Actions Button Order</label>
                 <div class="select-container">
                     <select id="${BUTTON_ORDER_SELECT_ID}">
-                        <option value="default">Default (Site Order)</option>
-                        <option value="new">New (Star, TTS, Regen, Edit/Var)</option>
+                        <option value="default">ChatPage v2</option>
+                        <option value="new">ChatPage v1</option>
                     </select>
                 </div>
             </div>
@@ -256,7 +256,7 @@
         });
 
         let orderToAppend = [];
-        if (currentButtonOrder === 'old') {
+        if (currentButtonOrder === 'new') {
             orderToAppend = [buttons.star, buttons.tts, buttons.regenerate, buttons.edit];
         } else {
             orderToAppend = [buttons.regenerate, buttons.edit, buttons.star, buttons.tts];
