@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SpicyChat UI Customizer
 // @namespace    http://tampermonkey.net/
-// @version      1.3.2
+// @version      1.4.7
 // @description  Customize SpicyChat UI. Requires 'SpicyChat Logic Core'.
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa
 // @match        https://spicychat.ai/chat/*
@@ -46,6 +46,7 @@
     const APPLY_BG_BTN_ID = 'sc-apply-bg-btn';
     const RESET_BG_BTN_ID = 'sc-reset-bg-btn';
     const WIDTH_STYLE_ID = 'sc-dynamic-width-style';
+    const BUTTON_ORDER_SELECT_ID = 'sc-button-order-select';
 
     const STORAGE_THEME_KEY = 'scUICustomizer_Theme_v1';
     const STORAGE_FONT_SIZE_KEY = 'scUICustomizer_FontSize_v1';
@@ -53,6 +54,7 @@
     const STORAGE_BACKGROUND_URL_KEY = 'scUICustomizer_BackgroundURL_v1';
     const STORAGE_OPACITY_KEY = 'scUICustomizer_Opacity_v1';
     const STORAGE_AVATAR_SIZE_KEY = 'scUICustomizer_AvatarSize_v1';
+    const STORAGE_BUTTON_ORDER_KEY = 'scUICustomizer_ButtonOrder_v1';
 
     const SHARED_CHAT_CONTAINER_SELECTOR = 'div.grow.flex.flex-col.w-full.left-0.items-center.absolute.h-full.overflow-auto';
     const BACKGROUND_TARGET_SELECTOR = SHARED_CHAT_CONTAINER_SELECTOR;
@@ -69,11 +71,18 @@
     const MIN_AVATAR_SIZE = 45;
     const MAX_AVATAR_SIZE = 150;
     const DEFAULT_AVATAR_SIZE = 45;
+    const DEFAULT_BUTTON_ORDER = 'default';
 
     const messageContainerSelector_SLIDER = ".py-lg > .gap-md[style*='max-width:']";
     const AVATAR_BUTTON_SELECTOR_USER = '[data-ui-component="UserMessageAvatarButton"]';
     const AVATAR_BUTTON_SELECTOR_BOT = '[data-ui-component="BotMessageAvatarButton"]';
     const ALL_AVATAR_BUTTON_SELECTORS = `${AVATAR_BUTTON_SELECTOR_USER}, ${AVATAR_BUTTON_SELECTOR_BOT}`;
+
+    const MESSAGE_ACTIONS_CONTAINER_SELECTOR = 'div[data-ui-component="BotMessageActionsContainer"]';
+    const BUTTON_SELECTOR_STAR = 'button[data-ui-component="BotMessageRateButton"]';
+    const BUTTON_SELECTOR_TTS = 'button[data-ui-component="BotMessageReadAloudButton"]';
+    const BUTTON_SELECTOR_REGENERATE = 'button[data-ui-component="BotMessageRegenerateButton"]';
+    const BUTTON_SELECTOR_EDIT = 'button[data-ui-component="BotMessageAddVariantButton"]';
 
     const themes = {
         'coastal_mist': {
@@ -108,7 +117,8 @@
         changeThemeBtn, resetBtn, themeListContainer, backBtn,
         backgroundUrlInput, applyBgBtn, resetBgBtn,
         opacitySlider, opacityValue,
-        avatarSizeSlider, avatarSizeValue;
+        avatarSizeSlider, avatarSizeValue,
+        buttonOrderSelectElement;
 
     let currentThemeKey = DEFAULT_THEME_KEY;
     let currentFontSize = DEFAULT_FONT_SIZE;
@@ -116,8 +126,9 @@
     let customBackgroundUrl = DEFAULT_BACKGROUND_URL;
     let currentOpacity = DEFAULT_OPACITY;
     let currentAvatarSize = DEFAULT_AVATAR_SIZE;
+    let currentButtonOrder = DEFAULT_BUTTON_ORDER;
     let isInitialized = false;
-    let avatarObserver = null;
+    let contentObserver = null;
 
     const popupHTML = `
         <div id="${VIEW_SETTINGS_ID}" style="display: block;">
@@ -126,6 +137,15 @@
             <div class="customizer-section"> <label for="${WIDTH_SLIDER_ID}">Message Width</label> <div class="slider-container"> <input type="range" id="${WIDTH_SLIDER_ID}" min="${MIN_WIDTH_SLIDER}" max="${MAX_WIDTH_SLIDER}" step="1"> <span id="${WIDTH_VALUE_ID}"></span> </div> </div>
             <div class="customizer-section"> <label for="${OPACITY_SLIDER_ID}">Message BG Opacity</label> <div class="slider-container"> <input type="range" id="${OPACITY_SLIDER_ID}" min="0" max="1" step="0.01"> <span id="${OPACITY_VALUE_ID}"></span> </div> </div>
             <div class="customizer-section"> <label for="${AVATAR_SIZE_SLIDER_ID}">Avatar Size</label> <div class="slider-container"> <input type="range" id="${AVATAR_SIZE_SLIDER_ID}" min="${MIN_AVATAR_SIZE}" max="${MAX_AVATAR_SIZE}" step="1"> <span id="${AVATAR_SIZE_VALUE_ID}"></span> </div> </div>
+            <div class="customizer-section">
+                <label for="${BUTTON_ORDER_SELECT_ID}">Message Actions Button Order</label>
+                <div class="select-container">
+                    <select id="${BUTTON_ORDER_SELECT_ID}">
+                        <option value="default">Default (Site Order)</option>
+                        <option value="new">New (Star, TTS, Regen, Edit/Var)</option>
+                    </select>
+                </div>
+            </div>
             <div class="customizer-section theme-section"> <span>Current Theme: <strong id="${THEME_DISPLAY_ID}"></strong></span> <button id="${CHANGE_THEME_BTN_ID}" class="customizer-button">Change Theme</button> </div>
             <div class="customizer-section background-section"> <label for="${BACKGROUND_URL_INPUT_ID}">Custom Background URL</label> <input type="text" id="${BACKGROUND_URL_INPUT_ID}" placeholder="Enter image URL..."> <div class="button-group"> <button id="${APPLY_BG_BTN_ID}" class="customizer-button apply-bg">Apply BG</button> <button id="${RESET_BG_BTN_ID}" class="customizer-button secondary reset-bg">Reset BG</button> </div> </div>
             <div class="customizer-footer"> <button id="${RESET_BTN_ID}" class="customizer-button secondary">Reset Font & Width</button> </div>
@@ -168,249 +188,117 @@
         #${POPUP_ID} .customizer-button.apply-bg:hover { background-color: #98C9C8; }
         #${LOGO_ID} { cursor: pointer !important; pointer-events: auto !important; transition: transform 0.2s ease, opacity 0.2s ease !important; opacity: 0.7 !important; }
         #${LOGO_ID}:hover { transform: scale(1.1) !important; opacity: 1 !important; }
-
-       [data-ui-component="ChatInputBarContainer"] { padding-top: 3px !important; padding-bottom: 5px !important; position: absolute !important; bottom: 5px !important; left: 0 !important; right: 0 !important; max-width: 70% !important; margin-top: 0 !important; }
-       ${SHARED_CHAT_CONTAINER_SELECTOR} { padding-bottom: 60px !important; }
+        #${POPUP_ID} .select-container { display: flex; align-items: center; margin-top: 4px; }
+        #${POPUP_ID} #${BUTTON_ORDER_SELECT_ID} { width: 100%; padding: 8px 10px; border: 1px solid #4c566a; background-color: rgba(59, 66, 82, 0.6); color: #eceff4; border-radius: 4px; font-size: 13px; box-sizing: border-box; cursor: pointer; font-family: 'Inter', sans-serif; }
+        #${POPUP_ID} #${BUTTON_ORDER_SELECT_ID} option { background-color: #3B4252; color: #ECEFF4; }
+        #${POPUP_ID} #${BUTTON_ORDER_SELECT_ID}:focus { outline: none; border-color: #88c0d0; box-shadow: 0 0 0 2px rgba(136, 192, 208, 0.3); }
+        [data-ui-component="ChatInputBarContainer"] { padding-top: 3px !important; padding-bottom: 5px !important; position: absolute !important; bottom: 5px !important; left: 0 !important; right: 0 !important; max-width: 70% !important; margin-top: 0 !important; }
+        ${SHARED_CHAT_CONTAINER_SELECTOR} { padding-bottom: 60px !important; }
     `;
 
-    function styleAvatarImageTag(imgTag) {
-        imgTag.style.width = '100%';
-        imgTag.style.height = '100%';
-        imgTag.style.objectFit = 'cover';
-        imgTag.style.display = 'block';
-        imgTag.style.borderRadius = '0';
-    }
-
-    function processSingleAvatar(avatarButton, size) {
-        if (!avatarButton) return;
-
-        const sizePx = `${size}px`;
-        avatarButton.style.width = sizePx;
-        avatarButton.style.height = sizePx;
-        avatarButton.style.borderRadius = '50%';
-        avatarButton.style.overflow = 'hidden';
-        avatarButton.style.display = 'inline-flex';
-        avatarButton.style.justifyContent = 'center';
-        avatarButton.style.alignItems = 'center';
-        avatarButton.style.border = 'none';
-        avatarButton.style.boxShadow = `0 0 0 1px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.05)`;
-
-        const img = avatarButton.querySelector('img');
-        if (img) {
-            const classParamPattern = /\?class=avatar\d+x\d+/;
-            let currentImgSrc = img.src;
-            let newSrcCandidate = currentImgSrc;
-            let needsSrcUpdate = false;
-
-            if (currentImgSrc && currentImgSrc.match(classParamPattern)) {
-                newSrcCandidate = currentImgSrc.replace(classParamPattern, '');
-                needsSrcUpdate = true;
-            }
-
-            if (needsSrcUpdate) {
-                if (img.dataset.triedCleanSrc === newSrcCandidate && img.dataset.cleanSrcFailed === 'true') {
-                    styleAvatarImageTag(img);
-                } else {
-                    const originalSrcForOnError = currentImgSrc;
-                    img.src = newSrcCandidate;
-                    img.dataset.triedCleanSrc = newSrcCandidate;
-                    img.dataset.cleanSrcFailed = 'false';
-
-                    img.onerror = function() {
-                        if (img.src !== originalSrcForOnError) {
-                           img.src = originalSrcForOnError;
-                        }
-                        img.dataset.cleanSrcFailed = 'true';
-                        img.onerror = null;
-                        img.onload = null;
-                        styleAvatarImageTag(img);
-                    };
-                    img.onload = function() {
-                        img.dataset.cleanSrcFailed = 'false';
-                        img.onload = null;
-                        img.onerror = null;
-                        styleAvatarImageTag(img);
-                    };
-                }
-            } else {
-                styleAvatarImageTag(img);
-            }
-            delete img.dataset.originalSrcAttempted;
-        }
-        avatarButton.dataset.processedBySize = String(size);
-    }
-
-    function applyCurrentAvatarSizeToAll(specificElements = null) {
-        const elementsToProcess = specificElements || document.querySelectorAll(ALL_AVATAR_BUTTON_SELECTORS);
-        const isCalledByObserver = !!specificElements;
-
-        elementsToProcess.forEach(avatarButton => {
-            if (!document.body.contains(avatarButton)) {
-                return;
-            }
-            if (isCalledByObserver || avatarButton.dataset.processedBySize !== String(currentAvatarSize)) {
-                 processSingleAvatar(avatarButton, currentAvatarSize);
-            }
-        });
-        if (avatarSizeValue) avatarSizeValue.textContent = `${currentAvatarSize}px`;
-    }
-
-    function applyDynamicStyles() {
-        if (!dynamicStyleElement) { dynamicStyleElement = document.createElement('style'); dynamicStyleElement.id = DYNAMIC_STYLE_ID; document.head.appendChild(dynamicStyleElement); }
-        const fontSize = `${currentFontSize}px`;
-        const lineHeight = `${Math.round(currentFontSize * 1.6)}px`;
-        dynamicStyleElement.textContent = `:root { --dynamic-font-size: ${fontSize}; --dynamic-line-height: ${lineHeight}; } [data-ui-component="MessageTextSpan"], [data-ui-component="MessageTextSpan"] > em, [data-ui-component="MessageTextSpan"] > q { font-size: var(--dynamic-font-size) !important; } [data-ui-component="MessageContentContainer"] { line-height: var(--dynamic-line-height) !important; } [data-ui-component="MessageInputTextarea"] { font-size: var(--dynamic-font-size) !important; line-height: 1.5 !important; }`;
-        if (fontValue) fontValue.textContent = `${currentFontSize}px`;
-    }
-
-    function applyWidthStyle(widthPercent) {
-        if (!widthStyleElement) { widthStyleElement = document.createElement('style'); widthStyleElement.id = WIDTH_STYLE_ID; document.head.appendChild(widthStyleElement); }
-        const customCSS = `
-            ${messageContainerSelector_SLIDER} {
-                width: ${widthPercent}% !important;
-                max-width: none !important;
-                margin-left: auto !important;
-                margin-right: auto !important;
-            }
-        `;
-        widthStyleElement.textContent = customCSS;
-         if (widthValue) widthValue.textContent = `${widthPercent}%`;
-    }
-
-    function applyOpacityStyle(opacity) {
-        const opacityValueFormatted = parseFloat(opacity).toFixed(2);
-        document.documentElement.style.setProperty('--message-bg-opacity', opacityValueFormatted);
-        if (opacityValue) opacityValue.textContent = opacityValueFormatted;
-    }
-
-    function applyCustomBackground() {
-        if (!backgroundStyleElement) { backgroundStyleElement = document.createElement('style'); backgroundStyleElement.id = BACKGROUND_STYLE_ID; document.head.appendChild(backgroundStyleElement); }
-        if (customBackgroundUrl && customBackgroundUrl.trim() !== '') {
-            try {
-                const safeUrl = CSS.escape(customBackgroundUrl.trim());
-                 backgroundStyleElement.textContent = `${BACKGROUND_TARGET_SELECTOR} { background-image: url("${safeUrl}") !important; background-size: cover !important; background-position: center center !important; background-repeat: no-repeat !important; background-attachment: fixed !important; }`;
-            } catch (e) {
-                 console.error("Error applying custom background:", e); backgroundStyleElement.textContent = '';
-            }
-        } else {
-            backgroundStyleElement.textContent = '';
-        }
-    }
-
-    function applyTheme(themeKey) {
-        currentThemeKey = themes[themeKey] ? themeKey : DEFAULT_THEME_KEY;
-        const theme = themes[currentThemeKey];
-        if (!themeStyleElement) { themeStyleElement = document.createElement('style'); themeStyleElement.id = THEME_STYLE_ID; document.head.appendChild(themeStyleElement); }
-        document.documentElement.className = document.documentElement.className.replace(/ theme-\S+/g, '');
-        document.documentElement.classList.add(`theme-${currentThemeKey}`);
-        themeStyleElement.textContent = theme.css;
-        if (themeDisplay) themeDisplay.textContent = theme.name;
-        if (popupElement) popupElement.dataset.activeTheme = currentThemeKey;
-        document.documentElement.classList.add('dark');
-        document.documentElement.style.colorScheme = 'dark';
-        applyCustomBackground();
-        applyCurrentAvatarSizeToAll();
-    }
-
+    function styleAvatarImageTag(imgTag) {  imgTag.style.width = '100%'; imgTag.style.height = '100%'; imgTag.style.objectFit = 'cover'; imgTag.style.display = 'block'; imgTag.style.borderRadius = '0'; }
+    function processSingleAvatar(avatarButton, size) {  if (!avatarButton) return; const sizePx = `${size}px`; avatarButton.style.width = sizePx; avatarButton.style.height = sizePx; avatarButton.style.borderRadius = '50%'; avatarButton.style.overflow = 'hidden'; avatarButton.style.display = 'inline-flex'; avatarButton.style.justifyContent = 'center'; avatarButton.style.alignItems = 'center'; avatarButton.style.border = 'none'; avatarButton.style.boxShadow = `0 0 0 1px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.05)`; const img = avatarButton.querySelector('img'); if (img) { const classParamPattern = /\?class=avatar\d+x\d+/; let currentImgSrc = img.src; let newSrcCandidate = currentImgSrc; let needsSrcUpdate = false; if (currentImgSrc && currentImgSrc.match(classParamPattern)) { newSrcCandidate = currentImgSrc.replace(classParamPattern, ''); needsSrcUpdate = true; } if (needsSrcUpdate) { if (img.dataset.triedCleanSrc === newSrcCandidate && img.dataset.cleanSrcFailed === 'true') { styleAvatarImageTag(img); } else { const originalSrcForOnError = currentImgSrc; img.src = newSrcCandidate; img.dataset.triedCleanSrc = newSrcCandidate; img.dataset.cleanSrcFailed = 'false'; img.onerror = function() { if (img.src !== originalSrcForOnError) { img.src = originalSrcForOnError; } img.dataset.cleanSrcFailed = 'true'; img.onerror = null; img.onload = null; styleAvatarImageTag(img); }; img.onload = function() { img.dataset.cleanSrcFailed = 'false'; img.onload = null; img.onerror = null; styleAvatarImageTag(img); }; } } else { styleAvatarImageTag(img); } delete img.dataset.originalSrcAttempted; } avatarButton.dataset.processedBySize = String(size); }
+    function applyCurrentAvatarSizeToAll(specificElements = null) {  const elementsToProcess = specificElements || document.querySelectorAll(ALL_AVATAR_BUTTON_SELECTORS); const isCalledByObserver = !!specificElements; elementsToProcess.forEach(avatarButton => { if (!document.body.contains(avatarButton)) { return; } if (isCalledByObserver || avatarButton.dataset.processedBySize !== String(currentAvatarSize)) { processSingleAvatar(avatarButton, currentAvatarSize); } }); if (avatarSizeValue) avatarSizeValue.textContent = `${currentAvatarSize}px`; }
+    function applyDynamicStyles() {  if (!dynamicStyleElement) { dynamicStyleElement = document.createElement('style'); dynamicStyleElement.id = DYNAMIC_STYLE_ID; document.head.appendChild(dynamicStyleElement); } const fontSize = `${currentFontSize}px`; const lineHeight = `${Math.round(currentFontSize * 1.6)}px`; dynamicStyleElement.textContent = `:root { --dynamic-font-size: ${fontSize}; --dynamic-line-height: ${lineHeight}; } [data-ui-component="MessageTextSpan"], [data-ui-component="MessageTextSpan"] > em, [data-ui-component="MessageTextSpan"] > q { font-size: var(--dynamic-font-size) !important; } [data-ui-component="MessageContentContainer"] { line-height: var(--dynamic-line-height) !important; } [data-ui-component="MessageInputTextarea"] { font-size: var(--dynamic-font-size) !important; line-height: 1.5 !important; }`; if (fontValue) fontValue.textContent = `${currentFontSize}px`; }
+    function applyWidthStyle(widthPercent) {  if (!widthStyleElement) { widthStyleElement = document.createElement('style'); widthStyleElement.id = WIDTH_STYLE_ID; document.head.appendChild(widthStyleElement); } const customCSS = ` ${messageContainerSelector_SLIDER} { width: ${widthPercent}% !important; max-width: none !important; margin-left: auto !important; margin-right: auto !important; } `; widthStyleElement.textContent = customCSS; if (widthValue) widthValue.textContent = `${widthPercent}%`; }
+    function applyOpacityStyle(opacity) {  const opacityValueFormatted = parseFloat(opacity).toFixed(2); document.documentElement.style.setProperty('--message-bg-opacity', opacityValueFormatted); if (opacityValue) opacityValue.textContent = opacityValueFormatted; }
+    function applyCustomBackground() {  if (!backgroundStyleElement) { backgroundStyleElement = document.createElement('style'); backgroundStyleElement.id = BACKGROUND_STYLE_ID; document.head.appendChild(backgroundStyleElement); } if (customBackgroundUrl && customBackgroundUrl.trim() !== '') { try { const safeUrl = CSS.escape(customBackgroundUrl.trim()); backgroundStyleElement.textContent = `${BACKGROUND_TARGET_SELECTOR} { background-image: url("${safeUrl}") !important; background-size: cover !important; background-position: center center !important; background-repeat: no-repeat !important; background-attachment: fixed !important; }`; } catch (e) { console.error("Error applying custom background:", e); backgroundStyleElement.textContent = ''; } } else { backgroundStyleElement.textContent = ''; } }
+    function applyTheme(themeKey) {  currentThemeKey = themes[themeKey] ? themeKey : DEFAULT_THEME_KEY; const theme = themes[currentThemeKey]; if (!themeStyleElement) { themeStyleElement = document.createElement('style'); themeStyleElement.id = THEME_STYLE_ID; document.head.appendChild(themeStyleElement); } document.documentElement.className = document.documentElement.className.replace(/ theme-\S+/g, ''); document.documentElement.classList.add(`theme-${currentThemeKey}`); if(theme && theme.css) { themeStyleElement.textContent = theme.css; } else { console.error(`Theme or theme CSS not found for key: ${currentThemeKey}`); themeStyleElement.textContent = '';  } if (themeDisplay && theme) themeDisplay.textContent = theme.name; if (popupElement) popupElement.dataset.activeTheme = currentThemeKey; document.documentElement.classList.add('dark'); document.documentElement.style.colorScheme = 'dark'; applyCustomBackground(); applyCurrentAvatarSizeToAll(); }
     async function saveFontSettings() { try { await GM_setValue(STORAGE_FONT_SIZE_KEY, currentFontSize); } catch (e) { console.error("Error saving font size:", e); } }
     async function saveWidthSettings() { try { await GM_setValue(STORAGE_WIDTH_KEY, currentWidth); } catch (e) { console.error("Error saving width:", e); } }
     async function saveThemePref() { try { await GM_setValue(STORAGE_THEME_KEY, currentThemeKey); } catch (e) { console.error("Error saving theme:", e); } }
     async function saveBackgroundUrl() { try { await GM_setValue(STORAGE_BACKGROUND_URL_KEY, customBackgroundUrl); } catch (e) { console.error("Error saving background URL:", e); } }
     async function saveOpacitySettings() { try { await GM_setValue(STORAGE_OPACITY_KEY, currentOpacity); } catch (e) { console.error("Error saving opacity:", e); } }
     async function saveAvatarSizeSettings() { try { await GM_setValue(STORAGE_AVATAR_SIZE_KEY, currentAvatarSize); } catch (e) { console.error("Error saving avatar size:", e); } }
+    async function saveButtonOrder() { try { await GM_setValue(STORAGE_BUTTON_ORDER_KEY, currentButtonOrder); } catch (e) { console.error("Error saving button order:", e); } }
+    async function loadSettings() { try { currentThemeKey = await GM_getValue(STORAGE_THEME_KEY, DEFAULT_THEME_KEY); currentFontSize = await GM_getValue(STORAGE_FONT_SIZE_KEY, DEFAULT_FONT_SIZE); currentWidth = await GM_getValue(STORAGE_WIDTH_KEY, DEFAULT_WIDTH_SLIDER); customBackgroundUrl = await GM_getValue(STORAGE_BACKGROUND_URL_KEY, DEFAULT_BACKGROUND_URL); currentOpacity = await GM_getValue(STORAGE_OPACITY_KEY, DEFAULT_OPACITY); currentAvatarSize = await GM_getValue(STORAGE_AVATAR_SIZE_KEY, DEFAULT_AVATAR_SIZE); currentButtonOrder = await GM_getValue(STORAGE_BUTTON_ORDER_KEY, DEFAULT_BUTTON_ORDER); currentFontSize = Math.max(8, Math.min(32, parseInt(currentFontSize, 10) || DEFAULT_FONT_SIZE)); currentWidth = Math.max(MIN_WIDTH_SLIDER, Math.min(MAX_WIDTH_SLIDER, parseInt(currentWidth, 10) || DEFAULT_WIDTH_SLIDER)); currentOpacity = Math.max(0, Math.min(1, parseFloat(currentOpacity) || DEFAULT_OPACITY)); currentAvatarSize = Math.max(MIN_AVATAR_SIZE, Math.min(MAX_AVATAR_SIZE, parseInt(currentAvatarSize, 10) || DEFAULT_AVATAR_SIZE)); if (!themes[currentThemeKey]) { currentThemeKey = DEFAULT_THEME_KEY; await saveThemePref(); } } catch (e) { console.error("Error loading settings, reverting to defaults:", e); currentThemeKey = DEFAULT_THEME_KEY; currentFontSize = DEFAULT_FONT_SIZE; currentWidth = DEFAULT_WIDTH_SLIDER; customBackgroundUrl = DEFAULT_BACKGROUND_URL; currentOpacity = DEFAULT_OPACITY; currentAvatarSize = DEFAULT_AVATAR_SIZE; currentButtonOrder = DEFAULT_BUTTON_ORDER; } }
+    function resetFontAndWidthSettings() {  currentFontSize = DEFAULT_FONT_SIZE; currentWidth = DEFAULT_WIDTH_SLIDER; if (fontSlider) fontSlider.value = currentFontSize; if (widthSlider) widthSlider.value = currentWidth; applyDynamicStyles(); applyWidthStyle(currentWidth); saveFontSettings(); saveWidthSettings(); }
+    function resetBackground() {  customBackgroundUrl = null; if (backgroundUrlInput) backgroundUrlInput.value = ''; saveBackgroundUrl(); applyCustomBackground(); }
+    function populateThemeList() {  if (!themeListContainer) return; themeListContainer.innerHTML = ''; for (const key in themes) { const theme = themes[key]; const item = document.createElement('div'); item.className = 'theme-item'; item.dataset.themeKey = key; item.innerHTML = `<span class="theme-item-name">${theme.name}</span> <span class="theme-item-desc">${theme.description}</span>`; item.addEventListener('click', () => { applyTheme(key); saveThemePref(); switchView('settings'); }); themeListContainer.appendChild(item); } }
+    function switchView(viewName) {  if (!settingsView || !themesView || !popupElement) return; settingsView.style.display = (viewName === 'settings') ? 'block' : 'none'; themesView.style.display = (viewName === 'themes') ? 'block' : 'none'; }
+    function positionPopup() {  if (!popupElement) return; popupElement.style.top = '15px'; popupElement.style.right = '15px'; popupElement.style.bottom = 'auto'; popupElement.style.left = 'auto'; }
+    function togglePopup() {  if (!popupElement) { return; } const isVisible = popupElement.classList.contains('visible'); if (!isVisible) { positionPopup(); void popupElement.offsetWidth; popupElement.classList.add('visible'); } else { popupElement.classList.remove('visible'); } }
 
-    async function loadSettings() {
-        try {
-            currentThemeKey = await GM_getValue(STORAGE_THEME_KEY, DEFAULT_THEME_KEY);
-            currentFontSize = await GM_getValue(STORAGE_FONT_SIZE_KEY, DEFAULT_FONT_SIZE);
-            currentWidth = await GM_getValue(STORAGE_WIDTH_KEY, DEFAULT_WIDTH_SLIDER);
-            customBackgroundUrl = await GM_getValue(STORAGE_BACKGROUND_URL_KEY, DEFAULT_BACKGROUND_URL);
-            currentOpacity = await GM_getValue(STORAGE_OPACITY_KEY, DEFAULT_OPACITY);
-            currentAvatarSize = await GM_getValue(STORAGE_AVATAR_SIZE_KEY, DEFAULT_AVATAR_SIZE);
 
-            currentFontSize = Math.max(8, Math.min(32, parseInt(currentFontSize, 10) || DEFAULT_FONT_SIZE));
-            currentWidth = Math.max(MIN_WIDTH_SLIDER, Math.min(MAX_WIDTH_SLIDER, parseInt(currentWidth, 10) || DEFAULT_WIDTH_SLIDER));
-            currentOpacity = Math.max(0, Math.min(1, parseFloat(currentOpacity) || DEFAULT_OPACITY));
-            currentAvatarSize = Math.max(MIN_AVATAR_SIZE, Math.min(MAX_AVATAR_SIZE, parseInt(currentAvatarSize, 10) || DEFAULT_AVATAR_SIZE));
-
-            if (!themes[currentThemeKey]) { currentThemeKey = DEFAULT_THEME_KEY; await saveThemePref(); }
-        } catch (e) {
-            console.error("Error loading settings, reverting to defaults:", e);
-            currentThemeKey = DEFAULT_THEME_KEY; currentFontSize = DEFAULT_FONT_SIZE; currentWidth = DEFAULT_WIDTH_SLIDER;
-            customBackgroundUrl = DEFAULT_BACKGROUND_URL; currentOpacity = DEFAULT_OPACITY; currentAvatarSize = DEFAULT_AVATAR_SIZE;
+    function reorderButtonsInContainer(actionsContainer) {
+        if (!actionsContainer || !document.body.contains(actionsContainer)) {
+            return;
         }
-    }
-
-    function resetFontAndWidthSettings() {
-        currentFontSize = DEFAULT_FONT_SIZE;
-        currentWidth = DEFAULT_WIDTH_SLIDER;
-
-        if (fontSlider) fontSlider.value = currentFontSize;
-        if (widthSlider) widthSlider.value = currentWidth;
-
-        applyDynamicStyles();
-        applyWidthStyle(currentWidth);
-
-        saveFontSettings();
-        saveWidthSettings();
-    }
-
-     function resetBackground() {
-        customBackgroundUrl = null;
-        if (backgroundUrlInput) backgroundUrlInput.value = '';
-        saveBackgroundUrl();
-        applyCustomBackground();
-    }
-
-    function populateThemeList() {
-        if (!themeListContainer) return;
-        themeListContainer.innerHTML = '';
-        for (const key in themes) {
-            const theme = themes[key];
-            const item = document.createElement('div');
-            item.className = 'theme-item';
-            item.dataset.themeKey = key;
-            item.innerHTML = `<span class="theme-item-name">${theme.name}</span> <span class="theme-item-desc">${theme.description}</span>`;
-            item.addEventListener('click', () => { applyTheme(key); saveThemePref(); switchView('settings'); });
-            themeListContainer.appendChild(item);
-        }
-    }
-
-    function switchView(viewName) {
-        if (!settingsView || !themesView || !popupElement) return;
-        settingsView.style.display = (viewName === 'settings') ? 'block' : 'none';
-        themesView.style.display = (viewName === 'themes') ? 'block' : 'none';
-    }
-
-    function positionPopup() {
-        if (!popupElement) return;
-        popupElement.style.top = '15px'; popupElement.style.right = '15px';
-        popupElement.style.bottom = 'auto'; popupElement.style.left = 'auto';
-    }
-
-    function togglePopup() {
-        if (!popupElement) { return; }
-        const isVisible = popupElement.classList.contains('visible');
-        if (!isVisible) {
-            positionPopup();
-            void popupElement.offsetWidth;
-            popupElement.classList.add('visible');
-        } else {
-            popupElement.classList.remove('visible');
-        }
-    }
-
-    function observeAvatars() {
-        const targetNode = document.querySelector(CHAT_MESSAGES_CONTAINER_SELECTOR);
-        if (!targetNode) {
-            setTimeout(observeAvatars, 1500);
+        const buttonParent = actionsContainer.querySelector('div.flex.justify-between.items-center > div.flex.items-center.gap-2');
+        if (!buttonParent) {
             return;
         }
 
-        const config = { childList: true, subtree: true };
+        const computedStyle = window.getComputedStyle(buttonParent);
+        const isActive = parseFloat(computedStyle.opacity) > 0.5 && computedStyle.display !== 'none';
+
+        if (!isActive) {
+            return;
+        } else {
+        }
+
+
+        if (buttonParent.dataset.scButtonOrderApplied === currentButtonOrder) {
+            return;
+        }
+
+        const buttons = {
+            star: buttonParent.querySelector(BUTTON_SELECTOR_STAR),
+            tts: buttonParent.querySelector(BUTTON_SELECTOR_TTS),
+            regenerate: buttonParent.querySelector(BUTTON_SELECTOR_REGENERATE),
+            edit: buttonParent.querySelector(BUTTON_SELECTOR_EDIT)
+        };
+
+        Object.values(buttons).forEach(btn => {
+            if (btn && btn.parentElement === buttonParent) {
+                buttonParent.removeChild(btn);
+            }
+        });
+
+        let orderToAppend = [];
+        if (currentButtonOrder === 'new') {
+            orderToAppend = [buttons.star, buttons.tts, buttons.regenerate, buttons.edit];
+        } else {
+            orderToAppend = [buttons.regenerate, buttons.edit, buttons.star, buttons.tts];
+        }
+
+        orderToAppend.forEach(button => {
+            if (button) {
+                buttonParent.appendChild(button);
+            }
+        });
+        buttonParent.dataset.scButtonOrderApplied = currentButtonOrder;
+    }
+
+    function applyButtonOrderToAllMessageActions(checkVisibility = false) {
+        document.querySelectorAll(MESSAGE_ACTIONS_CONTAINER_SELECTOR).forEach(container => {
+            if (checkVisibility) {
+                const buttonParent = container.querySelector('div.flex.justify-between.items-center > div.flex.items-center.gap-2');
+                if (buttonParent) {
+                    const computedStyle = window.getComputedStyle(buttonParent);
+                    const isActive = parseFloat(computedStyle.opacity) > 0.5 && computedStyle.display !== 'none';
+                    if (!isActive) {
+                        return;
+                    }
+                }
+            }
+            reorderButtonsInContainer(container);
+        });
+    }
+
+
+    function observeContent() {
+        const targetNode = document.querySelector(CHAT_MESSAGES_CONTAINER_SELECTOR);
+        if (!targetNode) {
+            setTimeout(observeContent, 1500);
+            return;
+        }
+        const config = { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] };
 
         const callback = function(mutationsList, observer) {
             const addedAvatarButtons = new Set();
+            const affectedMessageActionContainers = new Set();
+
             for (const mutation of mutationsList) {
                 if (mutation.type === 'childList') {
                     for (const node of mutation.addedNodes) {
@@ -419,20 +307,56 @@
                                 addedAvatarButtons.add(node);
                             }
                             node.querySelectorAll(ALL_AVATAR_BUTTON_SELECTORS).forEach(avatar => addedAvatarButtons.add(avatar));
+
+                            if (node.matches && node.matches(MESSAGE_ACTIONS_CONTAINER_SELECTOR)) {
+                                if (node.querySelector('div.flex.justify-between.items-center > div.flex.items-center.gap-2')) {
+                                    affectedMessageActionContainers.add(node);
+                                }
+                            }
+                            node.querySelectorAll(MESSAGE_ACTIONS_CONTAINER_SELECTOR).forEach(container => {
+                                if (container.querySelector('div.flex.justify-between.items-center > div.flex.items-center.gap-2')) {
+                                    affectedMessageActionContainers.add(container);
+                                }
+                            });
+                        }
+                    }
+                } else if (mutation.type === 'attributes') {
+                    const targetElement = mutation.target;
+                    const mainActionsContainer = targetElement.closest(MESSAGE_ACTIONS_CONTAINER_SELECTOR);
+                    if (mainActionsContainer) {
+                        const buttonParent = mainActionsContainer.querySelector('div.flex.justify-between.items-center > div.flex.items-center.gap-2');
+                        if (buttonParent && (targetElement === buttonParent || targetElement === mainActionsContainer || buttonParent.contains(targetElement))) {
+                           if (document.body.contains(mainActionsContainer)) {
+                                affectedMessageActionContainers.add(mainActionsContainer);
+                           }
                         }
                     }
                 }
+
+                if (mutation.target && mutation.target.nodeType === Node.ELEMENT_NODE) {
+                    const parentContainer = mutation.target.closest(MESSAGE_ACTIONS_CONTAINER_SELECTOR);
+                    if (parentContainer) {
+                       if (document.body.contains(parentContainer) &&
+                           parentContainer.querySelector('div.flex.justify-between.items-center > div.flex.items-center.gap-2')) {
+                           affectedMessageActionContainers.add(parentContainer);
+                       }
+                    }
+               }
             }
+
             if (addedAvatarButtons.size > 0) {
                 applyCurrentAvatarSizeToAll(Array.from(addedAvatarButtons));
             }
+            if (affectedMessageActionContainers.size > 0) {
+                affectedMessageActionContainers.forEach(container => reorderButtonsInContainer(container));
+            }
         };
-
-        if (avatarObserver) {
-            avatarObserver.disconnect();
+        if (contentObserver) {
+            contentObserver.disconnect();
         }
-        avatarObserver = new MutationObserver(callback);
-        avatarObserver.observe(targetNode, config);
+        contentObserver = new MutationObserver(callback);
+        contentObserver.observe(targetNode, config);
+        contentObserver.observe(document.body, { childList: true, subtree: true });
     }
 
     async function initialize() {
@@ -446,7 +370,8 @@
 
         try {
             await loadSettings();
-            if (!document.getElementById(POPUP_ID)) { popupElement = document.createElement('div'); popupElement.id = POPUP_ID; document.body.appendChild(popupElement); } else { popupElement = document.getElementById(POPUP_ID); }
+            if (!document.getElementById(POPUP_ID)) { popupElement = document.createElement('div'); popupElement.id = POPUP_ID; document.body.appendChild(popupElement); }
+            else { popupElement = document.getElementById(POPUP_ID); }
             popupElement.innerHTML = popupHTML;
 
             settingsView = document.getElementById(VIEW_SETTINGS_ID);
@@ -459,6 +384,7 @@
             opacityValue = document.getElementById(OPACITY_VALUE_ID);
             avatarSizeSlider = document.getElementById(AVATAR_SIZE_SLIDER_ID);
             avatarSizeValue = document.getElementById(AVATAR_SIZE_VALUE_ID);
+            buttonOrderSelectElement = document.getElementById(BUTTON_ORDER_SELECT_ID);
             themeDisplay = document.getElementById(THEME_DISPLAY_ID);
             changeThemeBtn = document.getElementById(CHANGE_THEME_BTN_ID);
             resetBtn = document.getElementById(RESET_BTN_ID);
@@ -470,8 +396,10 @@
 
             if (!settingsView || !themesView || !fontSlider || !fontValue || !widthSlider || !widthValue ||
                 !opacitySlider || !opacityValue || !avatarSizeSlider || !avatarSizeValue ||
+                !buttonOrderSelectElement ||
                 !themeDisplay || !changeThemeBtn || !resetBtn || !themeListContainer || !backBtn ||
                 !backgroundUrlInput || !applyBgBtn || !resetBgBtn) {
+                console.error("UI Customizer: One or more GUI elements are missing! Check IDs.");
                 throw new Error("GUI elements missing after creation!");
             }
 
@@ -482,38 +410,42 @@
             widthSlider.value = currentWidth;
             opacitySlider.value = currentOpacity;
             avatarSizeSlider.value = currentAvatarSize;
+            buttonOrderSelectElement.value = currentButtonOrder;
             backgroundUrlInput.value = customBackgroundUrl || '';
 
             applyTheme(currentThemeKey);
             applyDynamicStyles();
             applyWidthStyle(currentWidth);
             applyOpacityStyle(currentOpacity);
+            applyButtonOrderToAllMessageActions();
 
             if (!logoElement.dataset.customizerListener) { logoElement.addEventListener('click', (e) => { e.stopPropagation(); togglePopup(); }); logoElement.dataset.customizerListener = 'true'; }
             if (!fontSlider.dataset.listenerAdded) { fontSlider.addEventListener('input', () => { currentFontSize = fontSlider.value; applyDynamicStyles(); }); fontSlider.addEventListener('change', saveFontSettings); fontSlider.dataset.listenerAdded = 'true'; }
             if (!widthSlider.dataset.listenerAdded) { widthSlider.addEventListener('input', () => { currentWidth = widthSlider.value; applyWidthStyle(currentWidth); }); widthSlider.addEventListener('change', saveWidthSettings); widthSlider.dataset.listenerAdded = 'true'; }
             if (!opacitySlider.dataset.listenerAdded) { opacitySlider.addEventListener('input', () => { currentOpacity = opacitySlider.value; applyOpacityStyle(currentOpacity); }); opacitySlider.addEventListener('change', saveOpacitySettings); opacitySlider.dataset.listenerAdded = 'true'; }
-            if (!avatarSizeSlider.dataset.listenerAdded) {
-                avatarSizeSlider.addEventListener('input', () => { currentAvatarSize = avatarSizeSlider.value; applyCurrentAvatarSizeToAll(); });
-                avatarSizeSlider.addEventListener('change', saveAvatarSizeSettings);
-                avatarSizeSlider.dataset.listenerAdded = 'true';
+            if (!avatarSizeSlider.dataset.listenerAdded) { avatarSizeSlider.addEventListener('input', () => { currentAvatarSize = avatarSizeSlider.value; applyCurrentAvatarSizeToAll(); }); avatarSizeSlider.addEventListener('change', saveAvatarSizeSettings); avatarSizeSlider.dataset.listenerAdded = 'true'; }
+            if (!buttonOrderSelectElement.dataset.listenerAdded) {
+                buttonOrderSelectElement.addEventListener('change', () => {
+                    currentButtonOrder = buttonOrderSelectElement.value;
+                    saveButtonOrder();
+                    document.querySelectorAll(MESSAGE_ACTIONS_CONTAINER_SELECTOR).forEach(container => {
+                        const buttonParent = container.querySelector('div.flex.justify-between.items-center > div.flex.items-center.gap-2');
+                        if (buttonParent) {
+                            delete buttonParent.dataset.scButtonOrderApplied;
+                        }
+                    });
+                    applyButtonOrderToAllMessageActions(true);
+                });
+                buttonOrderSelectElement.dataset.listenerAdded = 'true';
             }
             if (!resetBtn.dataset.listenerAdded) { resetBtn.addEventListener('click', resetFontAndWidthSettings); resetBtn.dataset.listenerAdded = 'true'; }
             if (!changeThemeBtn.dataset.listenerAdded) { changeThemeBtn.addEventListener('click', () => switchView('themes')); changeThemeBtn.dataset.listenerAdded = 'true'; }
             if (!backBtn.dataset.listenerAdded) { backBtn.addEventListener('click', () => switchView('settings')); backBtn.dataset.listenerAdded = 'true'; }
-            if (!applyBgBtn.dataset.listenerAdded) {
-                applyBgBtn.addEventListener('click', () => {
-                    const url = backgroundUrlInput.value.trim();
-                    customBackgroundUrl = url;
-                    saveBackgroundUrl();
-                    applyCustomBackground();
-                });
-                applyBgBtn.dataset.listenerAdded = 'true';
-            }
+            if (!applyBgBtn.dataset.listenerAdded) { applyBgBtn.addEventListener('click', () => { const url = backgroundUrlInput.value.trim(); customBackgroundUrl = url; saveBackgroundUrl(); applyCustomBackground(); }); applyBgBtn.dataset.listenerAdded = 'true'; }
             if (!resetBgBtn.dataset.listenerAdded) { resetBgBtn.addEventListener('click', resetBackground); resetBgBtn.dataset.listenerAdded = 'true'; }
             if (!document.body.dataset.customizerPopupListener) { document.addEventListener('click', (event) => { if (popupElement && popupElement.classList.contains('visible')) { if (!popupElement.contains(event.target) && (!logoElement || !logoElement.contains(event.target))) { togglePopup(); } } }, true); document.body.dataset.customizerPopupListener = 'true'; }
 
-            observeAvatars();
+            observeContent();
 
         } catch (error) {
             console.error("Fatal error during UI Customizer initialization:", error);
