@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SpicyChat UI Customizer
 // @namespace    http://tampermonkey.net/
-// @version      1.4.7
+// @version      1.4.8
 // @description  Customize SpicyChat UI. Requires 'SpicyChat Logic Core'.
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa
 // @match        https://spicychat.ai/chat/*
