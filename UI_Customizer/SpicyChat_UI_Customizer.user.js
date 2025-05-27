@@ -256,7 +256,7 @@
         });
 
         let orderToAppend = [];
-        if (currentButtonOrder === 'new') {
+        if (currentButtonOrder === 'old') {
             orderToAppend = [buttons.star, buttons.tts, buttons.regenerate, buttons.edit];
         } else {
             orderToAppend = [buttons.regenerate, buttons.edit, buttons.star, buttons.tts];
