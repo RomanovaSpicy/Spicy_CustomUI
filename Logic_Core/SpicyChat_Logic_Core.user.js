@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         SpicyChat Logic Core
 // @namespace    http://tampermonkey.net/
-// @version      1.9
+// @version      2.0
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa
 // @description  Adds component labels to SpicyChat UI elements.
-// @match        https://spicychat.ai/chat/*
+// @match        https://spicychat.ai/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=spicychat.ai
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -20,7 +20,7 @@
 
 (function() {
     'use strict';
-    console.log("SpicyChat Logic Core: Скрипт запущен.");
+    console.log("SpicyChat Logic Core: Script loaded (v0.2.1).");
 
     const SCRIPT_UPDATE_URL = 'https://github.com/RomanovaSpicy/Spicy_CustomUI/raw/refs/heads/main/Logic_Core/SpicyChat_Logic_Core.user.js';
     const CHECK_INTERVAL_HOURS = 1;
@@ -28,19 +28,27 @@
 
     const logoUrl = "https://i.postimg.cc/d1pB83jc/LIBRARY-LOGO-for-discord-1.png";
 
+    let coreInitializedForChatPage = false;
+    let pageMutationObserver = null;
+    let logoElementRef = null;
+    let animationTimeoutId = null;
+    let dictionaryLoaded = false;
+    let initialMarkingDone = false;
+
     async function checkForUpdates() {
         const localVersion = GM_info.script.version;
         const scriptName = GM_info.script.name;
-        console.log(`SpicyChat Logic Core: Текущая версия ${localVersion}`);
+        console.log(`SpicyChat Logic Core: Current version ${localVersion}`);
 
         const lastCheckTimestamp = await GM_getValue(LAST_CHECK_TIMESTAMP_KEY, 0);
         const now = Date.now();
 
-        if (now - lastCheckTimestamp < CHECK_INTERVAL_HOURS * 60 * 60 * 1000) {
+        if (now - lastCheckTimestamp < CHECK_INTERVAL_HOURS * 60 * 60 * 1000 && lastCheckTimestamp !== 0) {
+            console.log("SpicyChat Logic Core: Update check performed recently. Skipping.");
             return;
         }
 
-        console.log("SpicyChat Logic Core: Проверка наличия обновлений на GitHub...");
+        console.log("SpicyChat Logic Core: Checking for updates on GitHub...");
 
         try {
              GM_xmlhttpRequest({
@@ -54,18 +62,18 @@
 
                         if (versionMatch && versionMatch[1]) {
                             const remoteVersion = versionMatch[1];
-                            console.log(`SpicyChat Logic Core: Последняя версия на GitHub: ${remoteVersion}`);
+                            console.log(`SpicyChat Logic Core: Latest version on GitHub: ${remoteVersion}`);
 
                             if (compareVersions(remoteVersion, localVersion) > 0) {
                                 const githubFileURL = SCRIPT_UPDATE_URL
                                     .replace('raw.githubusercontent.com/', 'github.com/')
                                     .replace('/refs/heads/main/', '/blob/main/');
 
-                                const notificationTitle = `${scriptName}: Доступно обновление!`;
-                                const notificationText = `Найдена новая версия ${remoteVersion} (у вас ${localVersion}). Нажмите, чтобы перейти на страницу обновления.`;
+                                const notificationTitle = `${scriptName}: Update available!`;
+                                const notificationText = `New version ${remoteVersion} found (you have ${localVersion}). Click to go to the update page.`;
 
                                 console.warn(`%c${notificationTitle}`, 'color: orange; font-weight: bold;');
-                                console.warn(`%cСсылка для обновления: ${githubFileURL}`, 'color: orange;');
+                                console.warn(`%cUpdate link: ${githubFileURL}`, 'color: orange;');
 
                                 GM_notification({
                                     text: notificationText,
@@ -77,30 +85,28 @@
                                     },
                                     timeout: 0
                                 });
-
                             } else {
-                                console.log("SpicyChat Logic Core: У вас установлена последняя версия.");
+                                console.log("SpicyChat Logic Core: You have the latest version.");
                             }
                             await GM_setValue(LAST_CHECK_TIMESTAMP_KEY, now);
-
                         } else {
-                            console.warn("SpicyChat Logic Core: Не удалось найти @version в удаленном скрипте.");
+                            console.warn("SpicyChat Logic Core: Could not find @version in remote script.");
                             await GM_setValue(LAST_CHECK_TIMESTAMP_KEY, now);
                         }
                     } else {
-                        console.warn(`SpicyChat Logic Core: Ошибка загрузки данных для проверки обновления. Статус: ${response.status}`);
+                        console.warn(`SpicyChat Logic Core: Error loading update data. Status: ${response.status}`);
                     }
                 },
                 onerror: function(error) {
-                    console.error("SpicyChat Logic Core: Сетевая ошибка при проверке обновления:", error);
+                    console.error("SpicyChat Logic Core: Network error during update check:", error);
                 },
                 ontimeout: function() {
-                     console.error("SpicyChat Logic Core: Таймаут при проверке обновления.");
+                     console.error("SpicyChat Logic Core: Timeout during update check.");
                 },
                 timeout: 15000
             });
         } catch (error) {
-            console.error("SpicyChat Logic Core: Исключение при попытке проверки обновления:", error);
+            console.error("SpicyChat Logic Core: Exception during update check attempt:", error);
         }
     }
 
@@ -121,8 +127,6 @@
     const animationDurationMs = 3500;
     const minIntervalSeconds = 60;
     const maxIntervalSeconds = 90;
-    let logoElement = null;
-    let animationTimeoutId = null;
 
     const logoCssStyles = `
         #${LOGO_ID} {
@@ -153,14 +157,14 @@
     `;
 
     function triggerLogoAnimation() {
-        if (!logoElement || logoElement.classList.contains('logo-rotating')) {
-            if (!logoElement) console.warn("Logic Core Logo: Элемент лого не найден для trigger.");
+        if (!logoElementRef || logoElementRef.classList.contains('logo-rotating')) {
+            if (!logoElementRef) console.warn("Logic Core Logo: Logo element not found for trigger.");
             return;
         }
-        logoElement.classList.add('logo-rotating');
+        logoElementRef.classList.add('logo-rotating');
         setTimeout(() => {
-            if (logoElement) {
-                logoElement.classList.remove('logo-rotating');
+            if (logoElementRef) {
+                logoElementRef.classList.remove('logo-rotating');
                 scheduleNextAnimation();
             }
         }, animationDurationMs);
@@ -168,8 +172,8 @@
 
     function scheduleNextAnimation() {
         if (animationTimeoutId) clearTimeout(animationTimeoutId);
-        if (!logoElement) {
-             console.warn("Logic Core Logo: Элемент лого не найден для schedule.");
+        if (!logoElementRef) {
+             console.warn("Logic Core Logo: Logo element not found for schedule.");
              return;
         }
         const randomDelay = (minIntervalSeconds + Math.random() * (maxIntervalSeconds - minIntervalSeconds)) * 1000;
@@ -177,28 +181,31 @@
              if (document.getElementById(LOGO_ID)) {
                  triggerLogoAnimation();
              } else {
-                 console.warn("Logic Core Logo: Элемент лого исчез перед запланированной анимацией.");
-                 logoElement = null;
+                 console.warn("Logic Core Logo: Logo element disappeared before scheduled animation.");
+                 logoElementRef = null;
              }
         }, randomDelay);
     }
 
     function createLogoElement() {
         if (document.getElementById(LOGO_ID)) {
-             logoElement = document.getElementById(LOGO_ID);
-             console.log("Logic Core Logo: Элемент лого уже существует.");
+             logoElementRef = document.getElementById(LOGO_ID);
+             console.log("Logic Core Logo: Logo element already exists.");
+             if (!logoElementRef.classList.contains('logo-rotating') && !animationTimeoutId) {
+                scheduleNextAnimation();
+             }
              return;
         }
-        logoElement = document.createElement('div');
-        logoElement.id = LOGO_ID;
-        logoElement.title = "SpicyChat Logic Core Active";
-        document.body.appendChild(logoElement);
-        console.log("Logic Core Logo: Элемент лого создан и добавлен.");
+        logoElementRef = document.createElement('div');
+        logoElementRef.id = LOGO_ID;
+        logoElementRef.title = "SpicyChat Logic Core Active";
+        document.body.appendChild(logoElementRef);
+        console.log("Logic Core Logo: Logo element created and added.");
         scheduleNextAnimation();
     }
 
     const CACHE_KEY_DICTIONARY = "spicyChatCore_dictionary";
-    const CACHE_KEY_TIMESTAMP = "spicyChatCore_lastCheckTimestamp";
+    const CACHE_KEY_TIMESTAMP = "spicyChatCore_lastCheckTimestamp_dict";
     const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
     function markElement(el, label) {
@@ -208,28 +215,17 @@
       }
     }
 
-    function markOnce(selector, label) {
-      if (!label) return;
-      try {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(el => {
-          if (!el.dataset.uiComponent) {
-              markElement(el, label);
-          }
-        });
-      } catch (e) {
-        console.error(`SpicyChat Logic Core: Ошибка при поиске селектора в markOnce: "${selector}"`, e);
-      }
-    }
-
     let componentDictionary = {};
-    const dictionaryUrl = 'https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/refs/heads/main/Dictionary/Dictionary4.json'; // URL СЛОВАРЯ
+    const dictionaryUrl = 'https://raw.githubusercontent.com/RomanovaSpicy/Spicy_CustomUI/refs/heads/main/Dictionary/Dictionary4.json';
 
     async function loadDictionary(callback) {
-        console.log("SpicyChat Logic Core: Загрузка словаря...");
+        console.log("SpicyChat Logic Core: Loading dictionary...");
+        dictionaryLoaded = false;
+        initialMarkingDone = false;
+
         if (!dictionaryUrl) {
-            console.warn("SpicyChat Logic Core: URL словаря не указан. Маркировка не будет работать.");
-            callback();
+            console.warn("SpicyChat Logic Core: Dictionary URL not specified. Marking will not work.");
+            if (callback) callback();
             return;
         }
 
@@ -239,12 +235,11 @@
         try {
              dictionaryFromCache = await GM_getValue(CACHE_KEY_DICTIONARY, null);
         } catch (e) {
-            console.error("SpicyChat Logic Core: Ошибка чтения словаря из GM_getValue!", e);
+            console.error("SpicyChat Logic Core: Error reading dictionary from GM_getValue!", e);
         }
 
-
         if (now - lastCheckTimestamp > CACHE_EXPIRY_MS || !dictionaryFromCache) {
-            console.log("SpicyChat Logic Core: Время обновления кэша словаря или кэш пуст. Загрузка с URL...");
+            console.log("SpicyChat Logic Core: Dictionary cache expired or empty. Loading from URL...");
             try {
                  GM_xmlhttpRequest({
                     method: "GET",
@@ -257,102 +252,118 @@
                                 componentDictionary = data.components || {};
                                 await GM_setValue(CACHE_KEY_DICTIONARY, componentDictionary);
                                 await GM_setValue(CACHE_KEY_TIMESTAMP, now);
-                                console.log("SpicyChat Logic Core: Словарь успешно загружен с URL и сохранен в кэш.");
+                                console.log("SpicyChat Logic Core: Dictionary successfully loaded from URL and cached.");
+                                dictionaryLoaded = true;
                              } catch (parseError) {
-                                console.error("SpicyChat Logic Core: Не удалось разобрать JSON словаря:", parseError);
+                                console.error("SpicyChat Logic Core: Failed to parse dictionary JSON:", parseError);
                                 if (dictionaryFromCache) {
-                                    console.warn("SpicyChat Logic Core: Используется словарь из кэша из-за ошибки разбора JSON.");
+                                    console.warn("SpicyChat Logic Core: Using cached dictionary due to JSON parsing error.");
                                     componentDictionary = dictionaryFromCache;
+                                    dictionaryLoaded = true;
                                 } else {
-                                    console.error("SpicyChat Logic Core: Кэш пуст, разбор JSON не удался. Маркировка не будет работать.");
+                                    console.error("SpicyChat Logic Core: Cache empty, JSON parsing failed. Marking will not work.");
                                     componentDictionary = {};
                                 }
                              }
                         } else {
-                             console.error(`SpicyChat Logic Core: Не удалось загрузить словарь с URL. Статус: ${response.status}`);
+                             console.error(`SpicyChat Logic Core: Failed to load dictionary from URL. Status: ${response.status}`);
                              if (dictionaryFromCache) {
-                                console.warn("SpicyChat Logic Core: Используется словарь из кэша из-за ошибки загрузки.");
+                                console.warn("SpicyChat Logic Core: Using cached dictionary due to loading error.");
                                 componentDictionary = dictionaryFromCache;
+                                dictionaryLoaded = true;
                              } else {
-                                console.error("SpicyChat Logic Core: Кэш пуст, загрузка не удалась. Маркировка не будет работать.");
+                                console.error("SpicyChat Logic Core: Cache empty, loading failed. Marking will not work.");
                                 componentDictionary = {};
                              }
                         }
-                        callback();
+                        if (callback) callback();
                     },
                     onerror: function(error) {
-                        console.error("SpicyChat Logic Core: Сетевая ошибка при загрузке словаря:", error);
+                        console.error("SpicyChat Logic Core: Network error while loading dictionary:", error);
                         if (dictionaryFromCache) {
-                            console.warn("SpicyChat Logic Core: Используется словарь из кэша из-за сетевой ошибки.");
+                            console.warn("SpicyChat Logic Core: Using cached dictionary due to network error.");
                             componentDictionary = dictionaryFromCache;
+                            dictionaryLoaded = true;
                         } else {
-                            console.error("SpicyChat Logic Core: Кэш пуст, сетевая ошибка. Маркировка не будет работать.");
+                            console.error("SpicyChat Logic Core: Cache empty, network error. Marking will not work.");
                             componentDictionary = {};
                         }
-                        callback();
+                        if (callback) callback();
                     },
                     ontimeout: function() {
-                        console.error("SpicyChat Logic Core: Таймаут при загрузке словаря.");
+                        console.error("SpicyChat Logic Core: Timeout while loading dictionary.");
                         if (dictionaryFromCache) {
-                            console.warn("SpicyChat Logic Core: Используется словарь из кэша из-за таймаута.");
+                            console.warn("SpicyChat Logic Core: Using cached dictionary due to timeout.");
                             componentDictionary = dictionaryFromCache;
+                            dictionaryLoaded = true;
                         } else {
-                            console.error("SpicyChat Logic Core: Кэш пуст, таймаут. Маркировка не будет работать.");
+                            console.error("SpicyChat Logic Core: Cache empty, timeout. Marking will not work.");
                             componentDictionary = {};
                         }
-                        callback();
+                        if (callback) callback();
                     },
                     timeout: 15000
                  });
-
             } catch (error) {
-                console.error("SpicyChat Logic Core: Исключение при попытке загрузить словарь:", error);
+                console.error("SpicyChat Logic Core: Exception while trying to load dictionary:", error);
                 if (dictionaryFromCache) {
-                    console.warn("SpicyChat Logic Core: Используется словарь из кэша из-за исключения.");
+                    console.warn("SpicyChat Logic Core: Using cached dictionary due to exception.");
                     componentDictionary = dictionaryFromCache;
+                    dictionaryLoaded = true;
                 } else {
-                    console.error("SpicyChat Logic Core: Кэш пуст, исключение. Маркировка не будет работать.");
+                    console.error("SpicyChat Logic Core: Cache empty, exception. Marking will not work.");
                     componentDictionary = {};
                 }
-                callback();
+                if (callback) callback();
             }
         } else {
-            console.log("SpicyChat Logic Core: Словарь загружен из кэша.");
+            console.log("SpicyChat Logic Core: Dictionary loaded from cache.");
             componentDictionary = dictionaryFromCache;
-            callback();
+            dictionaryLoaded = true;
+            if (callback) callback();
         }
     }
 
     let attempts = 0;
-    const MAX_ATTEMPTS = 30;
-    function tryInitialize() {
-        console.log("SpicyChat Logic Core: Попытка инициализации ядра...");
+    const MAX_ATTEMPTS = 100;
+    function tryInitializeChatPageLogic() {
+        if (!dictionaryLoaded) {
+            console.log("SpicyChat Logic Core: Dictionary not yet loaded, delaying chat page logic initialization.");
+            return;
+        }
+        if (initialMarkingDone && pageMutationObserver) {
+             console.log("SpicyChat Logic Core: Initial marking already done and MutationObserver active.");
+             return;
+        }
+
+        console.log("SpicyChat Logic Core: Attempting to initialize chat page logic...");
         attempts++;
         const scrollContainerSelector = 'div.grow.flex.flex-col.w-full.left-0.items-center.absolute.h-full.overflow-auto';
         let scrollContainer = null;
         try {
             scrollContainer = document.querySelector(scrollContainerSelector);
         } catch(e) {
-             console.error("SpicyChat Logic Core: Ошибка при поиске scrollContainer", e);
+             console.error("SpicyChat Logic Core: Error querying for scrollContainer", e);
         }
-
 
         if (!scrollContainer) {
           if (attempts < MAX_ATTEMPTS) {
-            console.warn(`Logic Core: Критический элемент (scrollContainer) не найден. Попытка ${attempts}/${MAX_ATTEMPTS} через 500мс.`);
-            setTimeout(tryInitialize, 500);
+            console.warn(`Logic Core: Critical element (scrollContainer) not found. Attempt ${attempts}/${MAX_ATTEMPTS} in 500ms.`);
+            setTimeout(tryInitializeChatPageLogic, 500);
           } else {
-            console.error("Логика SpicyChat Core: Не найден критичный DOM элемент (scrollContainer), прекращаем попытки инициализации MutationObserver.");
+            console.error("SpicyChat Logic Core: Critical DOM element (scrollContainer) not found, aborting MutationObserver initialization attempts.");
+            attempts = 0;
           }
           return;
         }
 
-        console.log("SpicyChat Logic Core: Критический DOM элемент (scrollContainer) найден.");
+        console.log("SpicyChat Logic Core: Critical DOM element (scrollContainer) found.");
+        attempts = 0;
 
         if (Object.keys(componentDictionary).length === 0) {
-            console.warn("SpicyChat Logic Core: Словарь компонентов пуст. Первоначальная маркировка и наблюдение не будут выполнены.");
+            console.warn("SpicyChat Logic Core: Component dictionary is empty. Initial marking and observation will not be performed.");
         } else {
-            console.log("SpicyChat Logic Core: Выполнение первоначальной маркировки...");
+            console.log("SpicyChat Logic Core: Performing initial marking...");
             let markedCount = 0;
             for (const selector in componentDictionary) {
               if (selector.startsWith('//')) { continue; }
@@ -368,18 +379,24 @@
                       }
                     });
                 } catch (e) {
-                    console.error(`SpicyChat Logic Core: Ошибка при поиске селектора в начальной маркировке: "${selector}"`, e);
+                    console.error(`SpicyChat Logic Core: Error querying selector during initial marking: "${selector}"`, e);
                 }
               } else if (typeof config !== 'object' || config === null) {
-                 console.warn(`SpicyChat Logic Core: Некорректная запись для селектора "${selector}" в словаре (ожидался объект).`);
+                 console.warn(`SpicyChat Logic Core: Invalid entry for selector "${selector}" in dictionary (object expected).`);
               } else if (!label) {
-                 console.warn(`SpicyChat Logic Core: Отсутствует 'label' для селектора "${selector}" в словаре.`);
+                 console.warn(`SpicyChat Logic Core: Missing 'label' for selector "${selector}" in dictionary.`);
               }
             }
-            console.log(`SpicyChat Logic Core: Первоначальная маркировка завершена (помечено ~${markedCount} элементов).`);
+            console.log(`SpicyChat Logic Core: Initial marking completed (approx. ${markedCount} elements marked).`);
+            const event = new CustomEvent('LogicCoreReady', { detail: { status: 'initialized' } });
+            document.dispatchEvent(event);
+            initialMarkingDone = true;
 
-            const observer = new MutationObserver(mutations => {
-              let mutationMarkedCount = 0;
+            if (pageMutationObserver) {
+                pageMutationObserver.disconnect();
+            }
+
+            pageMutationObserver = new MutationObserver(mutations => {
               mutations.forEach(mutation => {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                   mutation.addedNodes.forEach(node => {
@@ -393,7 +410,6 @@
                              if (node.matches(selector)) {
                                if (!node.dataset.uiComponent) {
                                    markElement(node, label);
-                                   mutationMarkedCount++;
                                }
                              }
                              if (node.querySelectorAll) {
@@ -401,14 +417,13 @@
                                  descendants.forEach(el => {
                                    if (!el.dataset.uiComponent) {
                                        markElement(el, label);
-                                       mutationMarkedCount++;
                                    }
                                  });
                              }
                            } catch (e) {
                                if (!window.invalidSelectorsLogged) { window.invalidSelectorsLogged = new Set(); }
                                if (!window.invalidSelectorsLogged.has(selector)) {
-                                   console.error(`SpicyChat Logic Core: Ошибка при проверке селектора в MutationObserver: "${selector}"`, e);
+                                   console.error(`SpicyChat Logic Core: Error matching selector in MutationObserver: "${selector}"`, e);
                                    window.invalidSelectorsLogged.add(selector);
                                }
                            }
@@ -420,26 +435,103 @@
               });
             });
 
-            observer.observe(scrollContainer, { childList: true, subtree: true });
-            console.log("SpicyChat Logic Core: Наблюдение за изменениями в scrollContainer активировано.");
+            pageMutationObserver.observe(scrollContainer, { childList: true, subtree: true });
+            console.log("SpicyChat Logic Core: MutationObserver activated for scrollContainer changes.");
         }
-
-        console.log("SpicyChat Logic Core: Инициализация ядра завершена.");
+        console.log("SpicyChat Logic Core: Chat page logic initialization complete.");
       }
 
-    checkForUpdates();
-    GM_addStyle(logoCssStyles);
-    console.log("SpicyChat Logic Core: Стили логотипа добавлены.");
+    function teardownChatPageFunctionality() {
+        if (!coreInitializedForChatPage) return;
+        console.log("SpicyChat Logic Core: Leaving chat page, cleaning up...");
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', createLogoElement, { once: true });
-    } else {
-        createLogoElement();
+        if (pageMutationObserver) {
+            pageMutationObserver.disconnect();
+            pageMutationObserver = null;
+            console.log("SpicyChat Logic Core: MutationObserver stopped.");
+        }
+
+        const logo = document.getElementById(LOGO_ID);
+        if (logo) {
+            logo.remove();
+            logoElementRef = null;
+            if (animationTimeoutId) {
+                clearTimeout(animationTimeoutId);
+                animationTimeoutId = null;
+            }
+            console.log("SpicyChat Logic Core: Logo removed.");
+        }
+        attempts = 0;
+        initialMarkingDone = false;
+        coreInitializedForChatPage = false;
     }
-    console.log("SpicyChat Logic Core: Создание логотипа запланировано/выполнено.");
 
-    console.log("SpicyChat Logic Core: Запуск загрузки словаря...");
-    loadDictionary(tryInitialize);
-    console.log("SpicyChat Logic Core: Вызов loadDictionary инициирован (асинхронно).");
+    function handleLocationChange() {
+        console.log(`SpicyChat Logic Core: URL changed to ${window.location.href}.`);
+        const isOnChatPage = window.location.pathname.startsWith('/chat/');
+
+        if (isOnChatPage) {
+            if (coreInitializedForChatPage) {
+                console.log("SpicyChat Logic Core: Already on chat page and initialized. Verifying state...");
+                if (!document.getElementById(LOGO_ID)) createLogoElement();
+                if (!dictionaryLoaded) {
+                     loadDictionary(tryInitializeChatPageLogic);
+                } else if (!initialMarkingDone || !pageMutationObserver) {
+                     tryInitializeChatPageLogic();
+                }
+                return;
+            }
+            console.log("SpicyChat Logic Core: Entering chat page, initializing...");
+            coreInitializedForChatPage = true;
+
+            createLogoElement();
+            loadDictionary(tryInitializeChatPageLogic);
+
+        } else {
+            teardownChatPageFunctionality();
+        }
+    }
+
+    GM_addStyle(logoCssStyles);
+    console.log("SpicyChat Logic Core: Logo styles added.");
+    checkForUpdates();
+
+    (function(history){
+        const pushState = history.pushState;
+        const replaceState = history.replaceState;
+        let navigationTimeout;
+
+        history.pushState = function() {
+            const ret = pushState.apply(this, arguments);
+            window.dispatchEvent(new Event('customPushstate_SLC'));
+            return ret;
+        };
+
+        history.replaceState = function() {
+            const ret = replaceState.apply(this, arguments);
+            window.dispatchEvent(new Event('customReplacestate_SLC'));
+            return ret;
+        };
+
+        const onLocationChange = () => {
+            clearTimeout(navigationTimeout);
+            navigationTimeout = setTimeout(handleLocationChange, 250);
+        };
+
+        window.addEventListener('popstate', onLocationChange);
+        window.addEventListener('customPushstate_SLC', onLocationChange);
+        window.addEventListener('customReplacestate_SLC', onLocationChange);
+
+    })(window.history);
+
+    if (document.readyState === 'complete') {
+        setTimeout(handleLocationChange, 250);
+    } else {
+        window.addEventListener('load', () => {
+            setTimeout(handleLocationChange, 250);
+        }, { once: true });
+    }
+
+    console.log("SpicyChat Logic Core: SPA navigation tracking and initializer set up.");
 
 })();
