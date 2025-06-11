@@ -4,6 +4,7 @@ A set of user scripts designed to enhance and customize the chat interface on [S
 
 **Author:** Sophie Romanova
 
+[💖 Support on Boosty](https://boosty.to/romanovasophie/donate)
 ---
 
 ## 📜 Brief Description & Features
