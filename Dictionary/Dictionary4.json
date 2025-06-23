@@ -12,6 +12,18 @@
     "div.grid > div:nth-child(1)": {
       "label": "SideNavContainer"
     },
+    "button[aria-label='previous']": {
+      "label": "BotMessagePreviousVariantButton",
+      "//": "Кнопка 'назад' для переключения вариантов ответа."
+    },
+    "button[aria-label='next']": {
+      "label": "BotMessageNextVariantButton",
+      "//": "Кнопка 'вперёд' для переключения вариантов ответа."
+    },
+    "div.flex.items-center:has(button[aria-label='next']) > p": {
+      "label": "BotMessageVariantInfoText",
+      "//": "Находит <p> с текстом 'X/Y' внутри контейнера с кнопками навигации по вариантам."
+    },
     "div.grid > div:nth-child(2)": {
       "label": "ChatAreaContainer"
     },
