@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SpicyChat UI Customizer
 // @namespace    http://tampermonkey.net/
-// @version      2.1
+// @version      2.31
 // @description  Customize SpicyChat UI. Requires 'SpicyChat Logic Core'.
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa (All), Sophie & Isid (Token Counter)
 // @match        https://spicychat.ai/*
@@ -251,35 +251,39 @@
         }`;
 
     const TOKEN_COUNTER_CSS = `
-        ${TOKEN_COUNTER_USER_MESSAGE_SELECTOR},
-        ${TOKEN_COUNTER_BOT_MESSAGE_SELECTOR} {
+        [data-ui-component*="ContentContainer"][${TOKEN_COUNTER_PROCESSED_MARKER}] {
             position: relative;
+            padding-bottom: 25px !important;
         }
-        ${TOKEN_COUNTER_USER_MESSAGE_SELECTOR}::after,
-        ${TOKEN_COUNTER_BOT_MESSAGE_SELECTOR}::after {
-            content: attr(${TOKEN_COUNTER_DATA_ATTRIBUTE_NAME});
-            position: absolute; bottom: 5px; right: 7px;
-            font-size: 0.68em; font-family: "SF Mono", "Consolas", "Menlo", "Courier New", monospace;
-            color: #c0c0c0; background-color: rgba(25, 25, 25, 0.8);
-            padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);
-            z-index: 5; pointer-events: none; opacity: 0;
-            transform: translateY(2px);
-            transition: opacity 0.25s ease-out, transform 0.25s ease-out;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-            line-height: 1.3; white-space: nowrap;
+
+        [data-ui-component*="ContentContainer"][${TOKEN_COUNTER_PROCESSED_MARKER}]::after {
+            content: "Tokens: " attr(${TOKEN_COUNTER_DATA_ATTRIBUTE_NAME});
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            height: 20px;
+            line-height: 20px;
+
+            font-size: 0.75em;
+            font-family: "SF Mono", "Consolas", "Menlo", "Courier New", monospace;
+            color: #a8b2c7;
+            user-select: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
         }
-        ${TOKEN_COUNTER_USER_MESSAGE_SELECTOR}[${TOKEN_COUNTER_DATA_ATTRIBUTE_NAME}]::after,
-        ${TOKEN_COUNTER_BOT_MESSAGE_SELECTOR}[${TOKEN_COUNTER_DATA_ATTRIBUTE_NAME}]::after {
-            opacity: 0.75; transform: translateY(0);
+
+        [data-ui-component*="Container"]:hover [data-ui-component*="ContentContainer"][${TOKEN_COUNTER_PROCESSED_MARKER}]::after,
+        [data-ui-component*="BackgroundContainer"]:hover [data-ui-component*="ContentContainer"][${TOKEN_COUNTER_PROCESSED_MARKER}]::after {
+            opacity: 1;
         }
-        ${TOKEN_COUNTER_USER_MESSAGE_SELECTOR}:hover::after,
-        ${TOKEN_COUNTER_BOT_MESSAGE_SELECTOR}:hover::after {
-            opacity: 0.95;
+
+        [data-ui-component*="ContentContainer"][${TOKEN_COUNTER_DATA_ATTRIBUTE_NAME}="0 t"] {
+            padding-bottom: 0 !important;
         }
-        ${TOKEN_COUNTER_USER_MESSAGE_SELECTOR}[${TOKEN_COUNTER_DATA_ATTRIBUTE_NAME}="0 t"]::after,
-        ${TOKEN_COUNTER_BOT_MESSAGE_SELECTOR}[${TOKEN_COUNTER_DATA_ATTRIBUTE_NAME}="0 t"]::after {
-            opacity: 0.25; box-shadow: none; transform: translateY(0);
-        }`;
+        [data-ui-component*="ContentContainer"][${TOKEN_COUNTER_DATA_ATTRIBUTE_NAME}="0 t"]::after {
+            display: none;
+        }
+    `;
 
     function styleAvatarImageTag(imgTag) { imgTag.style.width = '100%'; imgTag.style.height = '100%'; imgTag.style.objectFit = 'cover'; imgTag.style.display = 'block'; imgTag.style.borderRadius = '0'; }
     function processSingleAvatar(avatarButton, size) { if (!avatarButton) return; const sizePx = `${size}px`; avatarButton.style.width = sizePx; avatarButton.style.height = sizePx; avatarButton.style.borderRadius = '50%'; avatarButton.style.overflow = 'hidden'; avatarButton.style.display = 'inline-flex'; avatarButton.style.justifyContent = 'center'; avatarButton.style.alignItems = 'center'; avatarButton.style.border = 'none'; avatarButton.style.boxShadow = `0 0 0 1px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.05)`; const img = avatarButton.querySelector('img'); if (img) { const classParamPattern = /\?class=avatar\d+x\d+/; let currentImgSrc = img.src; let newSrcCandidate = currentImgSrc; let needsSrcUpdate = false; if (currentImgSrc && currentImgSrc.match(classParamPattern)) { newSrcCandidate = currentImgSrc.replace(classParamPattern, ''); needsSrcUpdate = true; } if (needsSrcUpdate) { if (img.dataset.triedCleanSrc === newSrcCandidate && img.dataset.cleanSrcFailed === 'true') { styleAvatarImageTag(img); } else { const originalSrcForOnError = currentImgSrc; img.src = newSrcCandidate; img.dataset.triedCleanSrc = newSrcCandidate; img.dataset.cleanSrcFailed = 'false'; img.onerror = function() { if (img.src !== originalSrcForOnError) { img.src = originalSrcForOnError; } img.dataset.cleanSrcFailed = 'true'; img.onerror = null; img.onload = null; styleAvatarImageTag(img); }; img.onload = function() { img.dataset.cleanSrcFailed = 'false'; img.onload = null; img.onerror = null; styleAvatarImageTag(img); }; } } else { styleAvatarImageTag(img); } delete img.dataset.originalSrcAttempted; } avatarButton.dataset.processedBySize = String(size); }
