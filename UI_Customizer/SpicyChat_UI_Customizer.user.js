@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SpicyChat UI Customizer
 // @namespace    http://tampermonkey.net/
-// @version      2.0
+// @version      2.1
 // @description  Customize SpicyChat UI. Requires 'SpicyChat Logic Core'.
 // @author       Discord: @encode_your, SpicyChat: @sophieaaa (All), Sophie & Isid (Token Counter)
 // @match        https://spicychat.ai/*
@@ -85,9 +85,9 @@
     const STORAGE_JUMPER_UI_POS_KEY = 'scUICustomizer_JumperUIPos_v1';
     const DEFAULT_JUMPER_ENABLED = false;
     const JUMPER_OUTER_MESSAGE_CONTAINER_SELECTOR = '[data-ui-component="BotMessageContainer"]';
-    const JUMPER_NEXT_BUTTON_SELECTOR = 'button[aria-label="next"]';
-    const JUMPER_PREV_BUTTON_SELECTOR = 'button[aria-label="previous"]';
-    const JUMPER_CURRENT_VARIANT_TEXT_SELECTOR = 'p.font-sans.text-label-md.font-regular.text-left.text-gray-10';
+    const JUMPER_NEXT_BUTTON_SELECTOR = '[data-ui-component="BotMessageNextVariantButton"]';
+    const JUMPER_PREV_BUTTON_SELECTOR = '[data-ui-component="BotMessagePreviousVariantButton"]';
+    const JUMPER_CURRENT_VARIANT_TEXT_SELECTOR = '[data-ui-component="BotMessageVariantInfoText"]';
     const JUMPER_UI_CONTAINER_ID = 'llmJumperContainer';
     const JUMPER_UI_HEADER_ID = 'llmJumperHeader';
     const JUMPER_INPUT_ID = 'llmVariantInput';
